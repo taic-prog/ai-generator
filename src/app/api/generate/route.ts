@@ -1,0 +1,91 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { headers } from "next/headers";
+import { MODEL_NAME, MAX_PROMPT_LENGTH } from "@/types";
+
+export const runtime = "nodejs";
+
+export async function POST(request: Request) {
+  const headersList = await headers();
+  const forwarded = headersList.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+
+  const { allowed, retryAfter } = checkRateLimit(ip);
+  if (!allowed) {
+    return Response.json(
+      { error: "リクエストが多すぎます。しばらく経ってから再試行してください。" },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
+  let prompt: string;
+  try {
+    const body = await request.json();
+    prompt = body.prompt;
+  } catch {
+    return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
+  }
+
+  if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
+    return Response.json({ error: "プロンプトを入力してください" }, { status: 400 });
+  }
+  if (prompt.length > MAX_PROMPT_LENGTH) {
+    return Response.json({ error: `プロンプトは${MAX_PROMPT_LENGTH}文字以内にしてください` }, { status: 400 });
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return Response.json({ error: "APIキーが設定されていません" }, { status: 500 });
+  }
+
+  const client = new Anthropic({ apiKey });
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const response = client.messages.stream({
+          model: MODEL_NAME,
+          max_tokens: 8192,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }],
+        });
+
+        for await (const event of response) {
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            const data = `data: ${JSON.stringify({ text: event.delta.text })}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          }
+        }
+
+        const finalMessage = await response.finalMessage();
+        const usage = finalMessage.usage;
+        const usageData = `data: ${JSON.stringify({
+          type: "usage",
+          inputTokens: usage.input_tokens,
+          outputTokens: usage.output_tokens,
+        })}\n\n`;
+        controller.enqueue(encoder.encode(usageData));
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "生成中にエラーが発生しました";
+        const errData = `data: ${JSON.stringify({ type: "error", message })}\n\n`;
+        controller.enqueue(encoder.encode(errData));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
+  });
+}
