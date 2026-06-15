@@ -29,7 +29,8 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
     a.href = url;
     a.download = "generated-app.html";
     a.click();
-    URL.revokeObjectURL(url);
+    // Safari では click() がダウンロードを非同期スケジュールするため遅延して revoke する
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   }
 
   return (

@@ -42,15 +42,20 @@ export async function POST(request: Request) {
   const client = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
 
+  const { signal } = request;
+
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const response = client.messages.stream({
-          model: MODEL_NAME,
-          max_tokens: 8192,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: prompt }],
-        });
+        const response = client.messages.stream(
+          {
+            model: MODEL_NAME,
+            max_tokens: 8192,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: "user", content: prompt }],
+          },
+          { signal }
+        );
 
         for await (const event of response) {
           if (

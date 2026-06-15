@@ -26,6 +26,9 @@ export function useGenerate() {
     abortControllerRef.current = controller;
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
+    // このコントローラが現在のリクエストかどうかを確認するガード
+    const isCurrentRequest = () => abortControllerRef.current === controller;
+
     setState({
       ...initialState,
       status: "generating",
@@ -40,15 +43,20 @@ export function useGenerate() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || `HTTPエラー: ${response.status}`);
+        let errorMessage = `HTTPエラー: ${response.status}`;
+        try {
+          const data = await response.json();
+          if (data.error) errorMessage = data.error;
+        } catch {
+          // 非JSONレスポンス（Vercel HTMLエラーページ等）は無視してステータスコードを使用
+        }
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error("レスポンスストリームを取得できませんでした");
 
       const decoder = new TextDecoder();
-      let accumulated = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -83,12 +91,9 @@ export function useGenerate() {
           }
 
           if (typeof parsed.text === "string") {
-            accumulated += parsed.text;
-            const finalAcc = accumulated;
-
+            const text = parsed.text;
             setState((prev) => {
-              const newRaw = prev.rawStream + parsed.text;
-              // </html>が届いたタイミングでiframe用HTMLを確定
+              const newRaw = prev.rawStream + text;
               const shouldExtract = isHtmlComplete(newRaw) && prev.extractedHtml === "";
               const extracted = shouldExtract ? (extractHtml(newRaw) ?? "") : prev.extractedHtml;
               return {
@@ -97,18 +102,21 @@ export function useGenerate() {
                 extractedHtml: extracted,
               };
             });
-            void finalAcc;
           }
         }
       }
 
       // ストリーム完了後にもHTML抽出を試みる（念のため）
-      setState((prev) => {
-        const extracted =
-          prev.extractedHtml !== "" ? prev.extractedHtml : (extractHtml(prev.rawStream) ?? "");
-        return { ...prev, status: "done", extractedHtml: extracted };
-      });
+      if (isCurrentRequest()) {
+        setState((prev) => {
+          const extracted =
+            prev.extractedHtml !== "" ? prev.extractedHtml : (extractHtml(prev.rawStream) ?? "");
+          return { ...prev, status: "done", extractedHtml: extracted };
+        });
+      }
     } catch (err) {
+      // 後続リクエストがすでに開始している場合は状態を上書きしない
+      if (!isCurrentRequest()) return;
       if ((err as Error).name === "AbortError") {
         setState((prev) => ({ ...prev, status: "error", error: "タイムアウトまたはキャンセルされました" }));
       } else {
