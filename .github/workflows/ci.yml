@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: 型チェック・リント・ビルド
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 依存パッケージのインストール
+        run: npm ci
+
+      - name: 型チェック
+        run: npx tsc --noEmit
+
+      - name: リント
+        run: npm run lint
+
+      - name: ビルド
+        run: npm run build
+        env:
+          # ビルド時はAPIキー不要（サーバーサイドのみで参照するため）
+          ANTHROPIC_API_KEY: dummy_for_build
