@@ -78,8 +78,11 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "生成中にエラーが発生しました";
-        const errData = `data: ${JSON.stringify({ type: "error", message })}\n\n`;
+        console.error("Claude API呼び出し中にエラーが発生しました:", err);
+        const errData = `data: ${JSON.stringify({
+          type: "error",
+          message: "生成中にエラーが発生しました。もう一度お試しください。",
+        })}\n\n`;
         controller.enqueue(encoder.encode(errData));
         controller.close();
       }
