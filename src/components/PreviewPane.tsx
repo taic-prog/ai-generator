@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { GenerationStatus } from "@/types";
 import { CodeViewer } from "./CodeViewer";
+import { AgentTemplateModal } from "./AgentTemplateModal";
+import { downloadAgentTemplates } from "@/lib/downloadTemplates";
+import { triggerDownload } from "@/lib/triggerDownload";
 
 interface PreviewPaneProps {
   html: string;
@@ -13,6 +16,7 @@ interface PreviewPaneProps {
 export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
   const [iframeKey, setIframeKey] = useState(0);
   const [showCode, setShowCode] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const hasContent = html !== "";
   const codeContent = hasContent ? html : rawStream;
@@ -24,13 +28,12 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
   function handleDownload() {
     if (!hasContent) return;
     const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "generated-app.html";
-    a.click();
-    // Safari では click() がダウンロードを非同期スケジュールするため遅延して revoke する
-    setTimeout(() => URL.revokeObjectURL(url), 100);
+    triggerDownload(blob, "generated-app.html");
+  }
+
+  function handleDownloadTemplates() {
+    if (!hasContent) return;
+    setShowTemplateModal(true);
   }
 
   return (
@@ -53,6 +56,9 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
           <ToolbarButton onClick={handleDownload} disabled={!hasContent}>
             ダウンロード
           </ToolbarButton>
+          <ToolbarButton onClick={handleDownloadTemplates} disabled={!hasContent}>
+            テンプレート
+          </ToolbarButton>
         </div>
       </div>
 
@@ -73,6 +79,10 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
           <Placeholder status={status} />
         )}
       </div>
+
+      {showTemplateModal && (
+        <AgentTemplateModal onClose={() => setShowTemplateModal(false)} onConfirm={downloadAgentTemplates} />
+      )}
     </div>
   );
 }
