@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { memo } from "react";
 
-export function Header() {
+export const Header = memo(function Header() {
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
       style={{ backgroundColor: "rgba(17,17,24,0.85)", backdropFilter: "blur(8px)", borderColor: "#1e1e2e" }}>
@@ -27,4 +28,4 @@ export function Header() {
       </Link>
     </header>
   );
-}
+});

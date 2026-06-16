@@ -6,6 +6,9 @@ import { MODEL_NAME, MAX_PROMPT_LENGTH } from "@/types";
 
 export const runtime = "nodejs";
 
+// apiKeyは不変なので、リクエストごとに作り直さずモジュールスコープで再利用する
+const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+
 export async function POST(request: Request) {
   const headersList = await headers();
   const forwarded = headersList.get("x-forwarded-for");
@@ -34,12 +37,10 @@ export async function POST(request: Request) {
     return Response.json({ error: `プロンプトは${MAX_PROMPT_LENGTH}文字以内にしてください` }, { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!client) {
     return Response.json({ error: "APIキーが設定されていません" }, { status: 500 });
   }
 
-  const client = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
 
   const { signal } = request;

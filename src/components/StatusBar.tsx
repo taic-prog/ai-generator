@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { GenerationStatus, MODEL_NAME } from "@/types";
 
 interface StatusBarProps {
@@ -13,7 +14,7 @@ const STATUS_CONFIG: Record<GenerationStatus, { color: string; label: string; pu
   error:      { color: "#f87171", label: "Error",      pulse: false },
 };
 
-export function StatusBar({ status, inputTokens, outputTokens }: StatusBarProps) {
+export const StatusBar = memo(function StatusBar({ status, inputTokens, outputTokens }: StatusBarProps) {
   const cfg = STATUS_CONFIG[status];
   const hasTokens = inputTokens > 0 || outputTokens > 0;
 
@@ -44,4 +45,4 @@ export function StatusBar({ status, inputTokens, outputTokens }: StatusBarProps)
       </div>
     </footer>
   );
-}
+});

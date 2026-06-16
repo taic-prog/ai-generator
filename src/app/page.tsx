@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Header } from "@/components/Header";
 import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
@@ -11,10 +11,10 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const { state, generate } = useGenerate();
 
-  function handleSubmit() {
+  const handleSubmit = useCallback(() => {
     if (prompt.trim() === "" || state.status === "generating") return;
     generate(prompt);
-  }
+  }, [prompt, state.status, generate]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0a0a0f" }}>

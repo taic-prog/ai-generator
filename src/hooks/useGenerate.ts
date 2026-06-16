@@ -57,13 +57,16 @@ export function useGenerate() {
       if (!reader) throw new Error("レスポンスストリームを取得できませんでした");
 
       const decoder = new TextDecoder();
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // 最後の要素は次の読み取りに続く未完成な行の可能性があるため、バッファに残す
+        buffer = lines.pop() ?? "";
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
@@ -94,7 +97,7 @@ export function useGenerate() {
             const text = parsed.text;
             setState((prev) => {
               const newRaw = prev.rawStream + text;
-              const shouldExtract = isHtmlComplete(newRaw) && prev.extractedHtml === "";
+              const shouldExtract = prev.extractedHtml === "" && isHtmlComplete(newRaw);
               const extracted = shouldExtract ? (extractHtml(newRaw) ?? "") : prev.extractedHtml;
               return {
                 ...prev,
