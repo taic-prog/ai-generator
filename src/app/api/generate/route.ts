@@ -79,13 +79,20 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       } catch (err) {
-        console.error("Claude API呼び出し中にエラーが発生しました:", err);
-        const errData = `data: ${JSON.stringify({
-          type: "error",
-          message: "生成中にエラーが発生しました。もう一度お試しください。",
-        })}\n\n`;
-        controller.enqueue(encoder.encode(errData));
-        controller.close();
+        // AbortErrorはクライアント切断による正常なキャンセルのため、エラーSSEは送信しない
+        if ((err as Error).name !== "AbortError") {
+          console.error("Claude API呼び出し中にエラーが発生しました:", err);
+          const errData = `data: ${JSON.stringify({
+            type: "error",
+            message: "生成中にエラーが発生しました。もう一度お試しください。",
+          })}\n\n`;
+          controller.enqueue(encoder.encode(errData));
+        }
+        try {
+          controller.close();
+        } catch {
+          // ストリームが既に閉じている場合は無視する
+        }
       }
     },
   });

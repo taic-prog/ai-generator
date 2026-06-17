@@ -61,12 +61,12 @@ export function useGenerate() {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+        // done時はTextDecoderをフラッシュしてバッファに追記する
+        buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        // 最後の要素は次の読み取りに続く未完成な行の可能性があるため、バッファに残す
-        buffer = lines.pop() ?? "";
+        // done時は残ったバッファも含めて全行を処理する（そうでない場合は未完成の行をバッファに残す）
+        buffer = done ? "" : (lines.pop() ?? "");
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
@@ -107,6 +107,8 @@ export function useGenerate() {
             });
           }
         }
+
+        if (done) break;
       }
 
       // ストリーム完了後にもHTML抽出を試みる（念のため）
