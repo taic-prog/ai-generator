@@ -1,4 +1,4 @@
-import { AppStyle } from "@/types";
+import { AppStyle, AppTaste } from "@/types";
 
 const STYLE_INSTRUCTIONS: Record<AppStyle, string> = {
   dark:
@@ -13,7 +13,20 @@ const STYLE_INSTRUCTIONS: Record<AppStyle, string> = {
     "classic/professional theme: white (#ffffff) background, near-black (#1e293b) text, muted slate accent (#475569). Subtle borders and shadows. Clean, formal, business-appropriate feel.",
 };
 
-export function buildSystemPrompt(style: AppStyle): string {
+const TASTE_INSTRUCTIONS: Record<AppTaste, string> = {
+  cute:
+    "Cute/kawaii personality: very rounded corners (border-radius 16px or more on all elements), soft drop shadows, bubbly sans-serif fonts, bouncy hover scale animations, heart or star decorative accents, gentle color gradients. Friendly and approachable feel.",
+  cool:
+    "Cool/sleek personality: sharp or subtly rounded corners, bold confident typography, smooth fade/slide-in transitions, geometric precision, monochrome or high-contrast accents, understated hover states. Sophisticated and effortlessly stylish feel.",
+  pop:
+    "Pop/energetic personality: bold oversized headings, high-contrast accent punches, playful scale/bounce animations on interaction, dynamic asymmetric layout accents, vivid highlights within the chosen color scheme. Eye-catching and energetic feel.",
+  elegant:
+    "Elegant personality: generous whitespace and padding, refined line-height, thin or light font weights for headings, slow smooth CSS transitions (0.4s–0.6s), classical proportions, subtle hover underline effects. Luxurious and graceful feel.",
+  minimal:
+    "Minimal personality: maximum whitespace, simple sans-serif typography at consistent sizes, avoid decorative elements, only absolutely essential UI components, very subtle hover states (opacity or color shift only). Clean and understated feel.",
+};
+
+export function buildSystemPrompt(style: AppStyle, taste: AppTaste): string {
   return `You are an expert frontend developer. Generate a complete, self-contained HTML application based on the user's request.
 
 RULES:
@@ -22,10 +35,11 @@ RULES:
 3. All JavaScript must be in <script> tags at the bottom of <body>.
 4. Do NOT use external CDN links or fetch() calls. Everything must be inline and self-contained.
 5. Apply the following visual style: ${STYLE_INSTRUCTIONS[style]}
-6. Use Japanese for UI labels and text if the request is in Japanese.
-7. Ensure the app is fully functional and interactive.
-8. Use CSS animations and transitions to enhance UX.
-9. The HTML must start with <!DOCTYPE html> and include a complete <head> and <body>.
+6. Apply the following design personality: ${TASTE_INSTRUCTIONS[taste]}
+7. Use Japanese for UI labels and text if the request is in Japanese.
+8. Ensure the app is fully functional and interactive.
+9. Use CSS animations and transitions to enhance UX.
+10. The HTML must start with <!DOCTYPE html> and include a complete <head> and <body>.
 
 IMPORTANT: Your entire response must be a single \`\`\`html code block. Nothing else before or after it.`;
 }

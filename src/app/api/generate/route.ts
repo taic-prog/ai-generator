@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt } from "@/lib/systemPrompt";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
-import { MODEL_NAME, MAX_PROMPT_LENGTH, AppStyle, APP_STYLES } from "@/types";
+import { MODEL_NAME, MAX_PROMPT_LENGTH, AppStyle, APP_STYLES, AppTaste, APP_TASTES } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
 
   let prompt: string;
   let style: AppStyle;
+  let taste: AppTaste;
   try {
     const body = await request.json();
     prompt = body.prompt;
@@ -31,6 +32,10 @@ export async function POST(request: Request) {
     style = typeof body.style === "string" && validStyleIds.has(body.style)
       ? (body.style as AppStyle)
       : "dark";
+    const validTasteIds = new Set<string>(APP_TASTES.map((t) => t.id));
+    taste = typeof body.taste === "string" && validTasteIds.has(body.taste)
+      ? (body.taste as AppTaste)
+      : "cool";
   } catch {
     return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
   }
@@ -57,7 +62,7 @@ export async function POST(request: Request) {
           {
             model: MODEL_NAME,
             max_tokens: 8192,
-            system: buildSystemPrompt(style),
+            system: buildSystemPrompt(style, taste),
             messages: [{ role: "user", content: prompt }],
           },
           { signal }

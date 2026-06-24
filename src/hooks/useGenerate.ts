@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { GenerationState, AppStyle } from "@/types";
+import { GenerationState, AppStyle, AppTaste } from "@/types";
 import { extractHtml, isHtmlComplete } from "@/lib/htmlExtractor";
 
 const initialState: GenerationState = {
@@ -17,7 +17,7 @@ export function useGenerate() {
   const [state, setState] = useState<GenerationState>(initialState);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const generate = useCallback(async (prompt: string, style: AppStyle) => {
+  const generate = useCallback(async (prompt: string, style: AppStyle, taste: AppTaste) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -38,7 +38,7 @@ export function useGenerate() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, style }),
+        body: JSON.stringify({ prompt, style, taste }),
         signal: controller.signal,
       });
 

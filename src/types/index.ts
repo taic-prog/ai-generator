@@ -37,5 +37,20 @@ export const APP_STYLES: StyleOption[] = [
   { id: "classic", label: "クラシック",   swatchColor: "#94a3b8" },
 ];
 
+export type AppTaste = "cute" | "cool" | "pop" | "elegant" | "minimal";
+
+export interface TasteOption {
+  id: AppTaste;
+  label: string;
+}
+
+export const APP_TASTES: TasteOption[] = [
+  { id: "cute",    label: "かわいい" },
+  { id: "cool",    label: "クール" },
+  { id: "pop",     label: "ポップ" },
+  { id: "elegant", label: "エレガント" },
+  { id: "minimal", label: "ミニマル" },
+];
+
 export const MAX_PROMPT_LENGTH = 500;
 export const MODEL_NAME = "claude-sonnet-4-20250514";

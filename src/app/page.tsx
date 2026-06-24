@@ -6,18 +6,19 @@ import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
 import { StatusBar } from "@/components/StatusBar";
 import { useGenerate } from "@/hooks/useGenerate";
-import { AppStyle, APP_STYLES } from "@/types";
+import { AppStyle, APP_STYLES, AppTaste, APP_TASTES } from "@/types";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState<AppStyle>("dark");
+  const [taste, setTaste] = useState<AppTaste>("cool");
   const { state, generate } = useGenerate();
   const isGenerating = state.status === "generating";
 
   const handleSubmit = useCallback(() => {
     if (prompt.trim() === "" || isGenerating) return;
-    generate(prompt, style);
-  }, [prompt, isGenerating, style, generate]);
+    generate(prompt, style, taste);
+  }, [prompt, isGenerating, style, taste, generate]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0a0a0f" }}>
@@ -61,6 +62,31 @@ export default function Home() {
                       style={{ backgroundColor: s.swatchColor }}
                     />
                     {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* テイスト選択 */}
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-mono" style={{ color: "#9999b3" }}>テイスト</p>
+            <div className="flex flex-wrap gap-2">
+              {APP_TASTES.map((t) => {
+                const isSelected = taste === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTaste(t.id)}
+                    disabled={isGenerating}
+                    className="px-3 py-1.5 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: isSelected ? "#1e1a3e" : "#111118",
+                      color: isSelected ? "#f0eff8" : "#9999b3",
+                      border: `1px solid ${isSelected ? "#7c6af7" : "#1e1e2e"}`,
+                    }}
+                  >
+                    {t.label}
                   </button>
                 );
               })}
