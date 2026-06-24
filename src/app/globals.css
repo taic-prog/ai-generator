@@ -12,6 +12,19 @@
   --color-border: #1e1e2e;
 }
 
+/* Tailwind v4 の @theme は :root に CSS カスタムプロパティを出力しないため、var() 参照用に明示的に定義する */
+:root {
+  --color-bg-main: #0a0a0f;
+  --color-bg-surface: #111118;
+  --color-bg-selected: #1e1a3e;
+  --color-accent: #7c6af7;
+  --color-text-primary: #f0eff8;
+  --color-text-secondary: #9999b3;
+  --color-success: #34d399;
+  --color-error: #f87171;
+  --color-border: #1e1e2e;
+}
+
 * {
   box-sizing: border-box;
 }

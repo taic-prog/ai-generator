@@ -55,7 +55,9 @@ export default function Home() {
                     style={{
                       backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
                       color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-                      border: `1px solid ${isSelected ? "var(--color-accent)" : "var(--color-border)"}`,
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",
                     }}
                   >
                     <span
@@ -85,7 +87,9 @@ export default function Home() {
                     style={{
                       backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
                       color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-                      border: `1px solid ${isSelected ? "var(--color-accent)" : "var(--color-border)"}`,
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",
                     }}
                   >
                     {t.label}

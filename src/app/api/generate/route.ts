@@ -8,8 +8,8 @@ export const runtime = "nodejs";
 
 // 不変定数はモジュールスコープで一度だけ構築する
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
-const VALID_STYLE_IDS = new Set<AppStyle>(APP_STYLES.map((s) => s.id));
-const VALID_TASTE_IDS = new Set<AppTaste>(APP_TASTES.map((t) => t.id));
+const VALID_STYLE_IDS = new Set<string>(APP_STYLES.map((s) => s.id));
+const VALID_TASTE_IDS = new Set<string>(APP_TASTES.map((t) => t.id));
 
 export async function POST(request: Request) {
   const headersList = await headers();
@@ -30,10 +30,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     prompt = body.prompt;
-    style = typeof body.style === "string" && VALID_STYLE_IDS.has(body.style as AppStyle)
+    style = typeof body.style === "string" && VALID_STYLE_IDS.has(body.style)
       ? (body.style as AppStyle)
       : "dark";
-    taste = typeof body.taste === "string" && VALID_TASTE_IDS.has(body.taste as AppTaste)
+    taste = typeof body.taste === "string" && VALID_TASTE_IDS.has(body.taste)
       ? (body.taste as AppTaste)
       : "cool";
   } catch (err) {
