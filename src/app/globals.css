@@ -3,6 +3,7 @@
 @theme {
   --color-bg-main: #0a0a0f;
   --color-bg-surface: #111118;
+  --color-bg-selected: #1e1a3e;
   --color-accent: #7c6af7;
   --color-text-primary: #f0eff8;
   --color-text-secondary: #9999b3;

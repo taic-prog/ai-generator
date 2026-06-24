@@ -6,8 +6,10 @@ import { MODEL_NAME, MAX_PROMPT_LENGTH, AppStyle, APP_STYLES, AppTaste, APP_TAST
 
 export const runtime = "nodejs";
 
-// apiKeyは不変なので、リクエストごとに作り直さずモジュールスコープで再利用する
+// 不変定数はモジュールスコープで一度だけ構築する
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+const VALID_STYLE_IDS = new Set<AppStyle>(APP_STYLES.map((s) => s.id));
+const VALID_TASTE_IDS = new Set<AppTaste>(APP_TASTES.map((t) => t.id));
 
 export async function POST(request: Request) {
   const headersList = await headers();
@@ -28,15 +30,16 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     prompt = body.prompt;
-    const validStyleIds = new Set<string>(APP_STYLES.map((s) => s.id));
-    style = typeof body.style === "string" && validStyleIds.has(body.style)
+    style = typeof body.style === "string" && VALID_STYLE_IDS.has(body.style as AppStyle)
       ? (body.style as AppStyle)
       : "dark";
-    const validTasteIds = new Set<string>(APP_TASTES.map((t) => t.id));
-    taste = typeof body.taste === "string" && validTasteIds.has(body.taste)
+    taste = typeof body.taste === "string" && VALID_TASTE_IDS.has(body.taste as AppTaste)
       ? (body.taste as AppTaste)
       : "cool";
-  } catch {
+  } catch (err) {
+    if (!(err instanceof SyntaxError)) {
+      console.error("リクエストパースで予期しないエラー:", err);
+    }
     return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
   }
 

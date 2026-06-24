@@ -50,11 +50,12 @@ export default function Home() {
                     key={s.id}
                     onClick={() => setStyle(s.id)}
                     disabled={isGenerating}
+                    aria-pressed={isSelected}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
-                      backgroundColor: isSelected ? "#1e1a3e" : "#111118",
-                      color: isSelected ? "#f0eff8" : "#9999b3",
-                      border: `1px solid ${isSelected ? "#7c6af7" : "#1e1e2e"}`,
+                      backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
+                      color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                      border: `1px solid ${isSelected ? "var(--color-accent)" : "var(--color-border)"}`,
                     }}
                   >
                     <span
@@ -79,11 +80,12 @@ export default function Home() {
                     key={t.id}
                     onClick={() => setTaste(t.id)}
                     disabled={isGenerating}
+                    aria-pressed={isSelected}
                     className="px-3 py-1.5 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
-                      backgroundColor: isSelected ? "#1e1a3e" : "#111118",
-                      color: isSelected ? "#f0eff8" : "#9999b3",
-                      border: `1px solid ${isSelected ? "#7c6af7" : "#1e1e2e"}`,
+                      backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
+                      color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+                      border: `1px solid ${isSelected ? "var(--color-accent)" : "var(--color-border)"}`,
                     }}
                   >
                     {t.label}
