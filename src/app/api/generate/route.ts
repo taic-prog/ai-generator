@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
+import { buildSystemPrompt } from "@/lib/systemPrompt";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
-import { MODEL_NAME, MAX_PROMPT_LENGTH } from "@/types";
+import { MODEL_NAME, MAX_PROMPT_LENGTH, AppStyle, APP_STYLES } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -23,9 +23,14 @@ export async function POST(request: Request) {
   }
 
   let prompt: string;
+  let style: AppStyle;
   try {
     const body = await request.json();
     prompt = body.prompt;
+    const validStyleIds = new Set<string>(APP_STYLES.map((s) => s.id));
+    style = typeof body.style === "string" && validStyleIds.has(body.style)
+      ? (body.style as AppStyle)
+      : "dark";
   } catch {
     return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
   }
@@ -52,7 +57,7 @@ export async function POST(request: Request) {
           {
             model: MODEL_NAME,
             max_tokens: 8192,
-            system: SYSTEM_PROMPT,
+            system: buildSystemPrompt(style),
             messages: [{ role: "user", content: prompt }],
           },
           { signal }

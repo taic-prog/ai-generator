@@ -6,15 +6,18 @@ import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
 import { StatusBar } from "@/components/StatusBar";
 import { useGenerate } from "@/hooks/useGenerate";
+import { AppStyle, APP_STYLES } from "@/types";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
+  const [style, setStyle] = useState<AppStyle>("dark");
   const { state, generate } = useGenerate();
+  const isGenerating = state.status === "generating";
 
   const handleSubmit = useCallback(() => {
-    if (prompt.trim() === "" || state.status === "generating") return;
-    generate(prompt);
-  }, [prompt, state.status, generate]);
+    if (prompt.trim() === "" || isGenerating) return;
+    generate(prompt, style);
+  }, [prompt, isGenerating, style, generate]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0a0a0f" }}>
@@ -35,11 +38,40 @@ export default function Home() {
             </p>
           </div>
 
+          {/* スタイル選択 */}
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-mono" style={{ color: "#9999b3" }}>スタイル</p>
+            <div className="flex flex-wrap gap-2">
+              {APP_STYLES.map((s) => {
+                const isSelected = style === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setStyle(s.id)}
+                    disabled={isGenerating}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: isSelected ? "#1e1a3e" : "#111118",
+                      color: isSelected ? "#f0eff8" : "#9999b3",
+                      border: `1px solid ${isSelected ? "#7c6af7" : "#1e1e2e"}`,
+                    }}
+                  >
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-sm"
+                      style={{ backgroundColor: s.swatchColor }}
+                    />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <PromptInput
             value={prompt}
             onChange={setPrompt}
             onSubmit={handleSubmit}
-            isGenerating={state.status === "generating"}
+            isGenerating={isGenerating}
           />
 
           {state.status === "error" && state.error && (

@@ -21,5 +21,21 @@ export const QUICK_CHIPS: QuickChip[] = [
   { label: "BMI計算機", prompt: "身長と体重を入力してBMIを計算するアプリを作ってください" },
 ];
 
+export type AppStyle = "dark" | "light" | "neon" | "pastel" | "classic";
+
+export interface StyleOption {
+  id: AppStyle;
+  label: string;
+  swatchColor: string;
+}
+
+export const APP_STYLES: StyleOption[] = [
+  { id: "dark",    label: "ダーク",       swatchColor: "#7c6af7" },
+  { id: "light",   label: "ライト",       swatchColor: "#3b82f6" },
+  { id: "neon",    label: "ネオン",       swatchColor: "#00ff9f" },
+  { id: "pastel",  label: "パステル",     swatchColor: "#d946ef" },
+  { id: "classic", label: "クラシック",   swatchColor: "#94a3b8" },
+];
+
 export const MAX_PROMPT_LENGTH = 500;
 export const MODEL_NAME = "claude-sonnet-4-20250514";
