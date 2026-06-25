@@ -59,6 +59,20 @@ export default function Home() {
                       borderStyle: "solid",
                       borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",
                     }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected && !isGenerating) {
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.backgroundColor = "var(--color-bg-hover)";
+                        btn.style.color = "var(--color-text-primary)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.backgroundColor = "var(--color-bg-surface)";
+                        btn.style.color = "var(--color-text-secondary)";
+                      }
+                    }}
                   >
                     <span
                       className="inline-block w-2.5 h-2.5 rounded-sm"
@@ -90,6 +104,20 @@ export default function Home() {
                       borderWidth: "1px",
                       borderStyle: "solid",
                       borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected && !isGenerating) {
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.backgroundColor = "var(--color-bg-hover)";
+                        btn.style.color = "var(--color-text-primary)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.backgroundColor = "var(--color-bg-surface)";
+                        btn.style.color = "var(--color-text-secondary)";
+                      }
                     }}
                   >
                     {t.label}

@@ -3,9 +3,11 @@
 @theme {
   --color-bg-main: #0a0a0f;
   --color-bg-surface: #111118;
+  --color-bg-code: #0d0d14;
   --color-bg-selected: #1e1a3e;
   --color-bg-hover: #2a2a3e;
   --color-bg-surface-blur: rgba(17,17,24,0.85);
+  --color-overlay: rgba(10,10,15,0.8);
   --color-accent: #7c6af7;
   --color-accent-hover: #6b5ce0;
   --color-text-primary: #f0eff8;
@@ -17,15 +19,20 @@
   --color-error-border: #3a2020;
   --color-warning: #f59e0b;
   --color-border: #1e1e2e;
+  --color-scrollbar-thumb: #2a2a3e;
+  --color-scrollbar-thumb-hover: #3a3a5e;
 }
 
 /* Tailwind v4 の @theme は :root に CSS カスタムプロパティを出力しないため、var() 参照用に明示的に定義する */
+/* @theme inline フラグはユーティリティ値のインライン展開方法にのみ影響し、:root への出力挙動は変わらないため、このブロックは常に必要 */
 :root {
   --color-bg-main: #0a0a0f;
   --color-bg-surface: #111118;
+  --color-bg-code: #0d0d14;
   --color-bg-selected: #1e1a3e;
   --color-bg-hover: #2a2a3e;
   --color-bg-surface-blur: rgba(17,17,24,0.85);
+  --color-overlay: rgba(10,10,15,0.8);
   --color-accent: #7c6af7;
   --color-accent-hover: #6b5ce0;
   --color-text-primary: #f0eff8;
@@ -37,6 +44,8 @@
   --color-error-border: #3a2020;
   --color-warning: #f59e0b;
   --color-border: #1e1e2e;
+  --color-scrollbar-thumb: #2a2a3e;
+  --color-scrollbar-thumb-hover: #3a3a5e;
 }
 
 * {
@@ -57,9 +66,9 @@ body {
   background: var(--color-bg-main);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-bg-hover);
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-dim);
+  background: var(--color-scrollbar-thumb-hover);
 }

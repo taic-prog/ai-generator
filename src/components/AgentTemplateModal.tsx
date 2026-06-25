@@ -65,7 +65,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(10, 10, 15, 0.8)" }}
+      style={{ backgroundColor: "var(--color-overlay)" }}
       onClick={onClose}
     >
       <div
@@ -75,13 +75,13 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         aria-labelledby={TITLE_ID}
         tabIndex={-1}
         className="w-full max-w-md rounded-lg border p-5"
-        style={{ backgroundColor: "#111118", borderColor: "#1e1e2e" }}
+        style={{ backgroundColor: "var(--color-bg-surface)", borderColor: "var(--color-border)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={TITLE_ID} className="text-sm font-mono mb-1" style={{ color: "#f0eff8" }}>
+        <h2 id={TITLE_ID} className="text-sm font-mono mb-1" style={{ color: "var(--color-text-primary)" }}>
           含めるサブエージェントを選択
         </h2>
-        <p className="text-xs font-mono mb-4" style={{ color: "#9999b3" }}>
+        <p className="text-xs font-mono mb-4" style={{ color: "var(--color-text-secondary)" }}>
           CLAUDE.md・コーディング規約・セキュリティルールは常に含まれます
         </p>
 
@@ -90,7 +90,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
             <label
               key={agent.id}
               className="flex items-start gap-2 px-2.5 py-2 rounded cursor-pointer"
-              style={{ backgroundColor: "#1e1e2e" }}
+              style={{ backgroundColor: "var(--color-border)" }}
             >
               <input
                 type="checkbox"
@@ -99,10 +99,10 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
                 className="mt-0.5"
               />
               <span>
-                <span className="block text-xs font-mono" style={{ color: "#f0eff8" }}>
+                <span className="block text-xs font-mono" style={{ color: "var(--color-text-primary)" }}>
                   {agent.label}
                 </span>
-                <span className="block text-xs font-mono" style={{ color: "#9999b3" }}>
+                <span className="block text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
                   {agent.description}
                 </span>
               </span>
@@ -111,12 +111,12 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         </div>
 
         {selectedIds.length === 0 && (
-          <p className="text-xs font-mono mb-3" style={{ color: "#f87171" }}>
+          <p className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
             少なくとも1つ選択してください
           </p>
         )}
         {error && (
-          <p className="text-xs font-mono mb-3" style={{ color: "#f87171" }}>
+          <p className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
             {error}
           </p>
         )}
@@ -126,7 +126,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
             onClick={onClose}
             disabled={isDownloading}
             className="text-xs font-mono px-3 py-1.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: "#1e1e2e", color: "#9999b3" }}
+            style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
           >
             キャンセル
           </button>
@@ -134,7 +134,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
             onClick={handleConfirm}
             disabled={selectedIds.length === 0 || isDownloading}
             className="text-xs font-mono px-3 py-1.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: "#7c6af7", color: "#f0eff8" }}
+            style={{ backgroundColor: "var(--color-accent)", color: "var(--color-text-primary)" }}
           >
             {isDownloading ? "ダウンロード中..." : "ダウンロード"}
           </button>

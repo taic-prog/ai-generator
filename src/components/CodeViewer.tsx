@@ -21,12 +21,12 @@ export function CodeViewer({ code }: CodeViewerProps) {
   return (
     <div className="relative h-full flex flex-col">
       <div className="flex items-center justify-between px-3 py-1.5 border-b"
-        style={{ backgroundColor: "#0d0d14", borderColor: "#1e1e2e" }}>
-        <span className="text-xs font-mono" style={{ color: "#9999b3" }}>generated.html</span>
+        style={{ backgroundColor: "var(--color-bg-code)", borderColor: "var(--color-border)" }}>
+        <span className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>generated.html</span>
         <button
           onClick={handleCopy}
           className="text-xs font-mono px-2 py-0.5 rounded transition-colors"
-          style={{ color: copied ? "#34d399" : "#9999b3", backgroundColor: "#1e1e2e" }}
+          style={{ color: copied ? "var(--color-success)" : "var(--color-text-secondary)", backgroundColor: "var(--color-border)" }}
         >
           {copied ? "コピー済み ✓" : "コピー"}
         </button>
