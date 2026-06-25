@@ -4,11 +4,18 @@
   --color-bg-main: #0a0a0f;
   --color-bg-surface: #111118;
   --color-bg-selected: #1e1a3e;
+  --color-bg-hover: #2a2a3e;
+  --color-bg-surface-blur: rgba(17,17,24,0.85);
   --color-accent: #7c6af7;
+  --color-accent-hover: #6b5ce0;
   --color-text-primary: #f0eff8;
   --color-text-secondary: #9999b3;
+  --color-dim: #3a3a5e;
   --color-success: #34d399;
   --color-error: #f87171;
+  --color-error-bg: #2a1a1a;
+  --color-error-border: #3a2020;
+  --color-warning: #f59e0b;
   --color-border: #1e1e2e;
 }
 
@@ -17,11 +24,18 @@
   --color-bg-main: #0a0a0f;
   --color-bg-surface: #111118;
   --color-bg-selected: #1e1a3e;
+  --color-bg-hover: #2a2a3e;
+  --color-bg-surface-blur: rgba(17,17,24,0.85);
   --color-accent: #7c6af7;
+  --color-accent-hover: #6b5ce0;
   --color-text-primary: #f0eff8;
   --color-text-secondary: #9999b3;
+  --color-dim: #3a3a5e;
   --color-success: #34d399;
   --color-error: #f87171;
+  --color-error-bg: #2a1a1a;
+  --color-error-border: #3a2020;
+  --color-warning: #f59e0b;
   --color-border: #1e1e2e;
 }
 
@@ -30,8 +44,8 @@
 }
 
 body {
-  background-color: #0a0a0f;
-  color: #f0eff8;
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
   font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
 }
 
@@ -40,12 +54,12 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0f;
+  background: var(--color-bg-main);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a3e;
+  background: var(--color-bg-hover);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a5e;
+  background: var(--color-dim);
 }

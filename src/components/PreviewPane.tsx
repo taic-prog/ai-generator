@@ -41,9 +41,9 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
       {/* ツールバー */}
       <div
         className="flex items-center justify-between px-3 py-2 border-b shrink-0"
-        style={{ backgroundColor: "#111118", borderColor: "#1e1e2e" }}
+        style={{ backgroundColor: "var(--color-bg-surface)", borderColor: "var(--color-border)" }}
       >
-        <span className="text-xs font-mono" style={{ color: "#9999b3" }}>
+        <span className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
           {showCode ? "ソースコード" : "プレビュー"}
         </span>
         <div className="flex items-center gap-2">
@@ -101,16 +101,16 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       className="text-xs font-mono px-2.5 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      style={{ backgroundColor: "#1e1e2e", color: "#9999b3" }}
+      style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
       onMouseEnter={(e) => {
         if (!disabled) {
-          (e.currentTarget as HTMLButtonElement).style.color = "#f0eff8";
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#2a2a3e";
+          (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
+          (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-bg-hover)";
         }
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.color = "#9999b3";
-        (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1e1e2e";
+        (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
+        (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-border)";
       }}
     >
       {children}
@@ -121,15 +121,15 @@ function ToolbarButton({
 function Placeholder({ status }: { status: GenerationStatus }) {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-3"
-      style={{ color: "#3a3a5e" }}>
+      style={{ color: "var(--color-dim)" }}>
       {status === "generating" ? (
         <>
           <span className="inline-block w-8 h-8 border-2 rounded-full animate-spin"
-            style={{ borderColor: "#7c6af7 transparent transparent transparent" }} />
-          <span className="text-sm font-mono" style={{ color: "#9999b3" }}>生成中...</span>
+            style={{ borderColor: "var(--color-accent) transparent transparent transparent" }} />
+          <span className="text-sm font-mono" style={{ color: "var(--color-text-secondary)" }}>生成中...</span>
         </>
       ) : status === "error" ? (
-        <span className="text-sm font-mono" style={{ color: "#f87171" }}>エラーが発生しました</span>
+        <span className="text-sm font-mono" style={{ color: "var(--color-error)" }}>エラーが発生しました</span>
       ) : (
         <>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">

@@ -33,16 +33,16 @@ export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit
             onClick={() => onChange(chip.prompt)}
             disabled={isGenerating}
             className="px-3 py-1 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: "#1e1e2e", color: "#9999b3", border: "1px solid #2a2a3e" }}
+            style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)", borderWidth: "1px", borderStyle: "solid", borderColor: "var(--color-bg-hover)" }}
             onMouseEnter={(e) => {
               if (!isGenerating) {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#2a2a3e";
-                (e.currentTarget as HTMLButtonElement).style.color = "#f0eff8";
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-bg-hover)";
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
               }
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#1e1e2e";
-              (e.currentTarget as HTMLButtonElement).style.color = "#9999b3";
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-border)";
+              (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
             }}
           >
             {chip.label}
@@ -63,18 +63,20 @@ export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit
           rows={5}
           className="w-full resize-none rounded-lg px-4 py-3 text-sm font-mono outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            backgroundColor: "#111118",
-            color: "#f0eff8",
-            border: "1px solid #1e1e2e",
+            backgroundColor: "var(--color-bg-surface)",
+            color: "var(--color-text-primary)",
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: "var(--color-border)",
             lineHeight: "1.6",
           }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#7c6af7")}
-          onBlur={(e) => (e.currentTarget.style.borderColor = "#1e1e2e")}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-border)")}
         />
         <span
           id="char-count"
           className="absolute bottom-2 right-3 text-xs font-mono"
-          style={{ color: isOverLimit ? "#f87171" : isNearLimit ? "#f59e0b" : "#9999b3" }}
+          style={{ color: isOverLimit ? "var(--color-error)" : isNearLimit ? "var(--color-warning)" : "var(--color-text-secondary)" }}
         >
           {value.length}/{MAX_PROMPT_LENGTH}
         </span>
@@ -85,18 +87,18 @@ export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit
         onClick={onSubmit}
         disabled={!canSubmit}
         className="w-full py-2.5 rounded-lg text-sm font-mono font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ backgroundColor: "#7c6af7", color: "#f0eff8" }}
+        style={{ backgroundColor: "var(--color-accent)", color: "var(--color-text-primary)" }}
         onMouseEnter={(e) => {
-          if (canSubmit) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#6b5ce0";
+          if (canSubmit) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-accent-hover)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#7c6af7";
+          (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-accent)";
         }}
       >
         {isGenerating ? (
           <span className="flex items-center justify-center gap-2">
             <span className="inline-block w-3.5 h-3.5 border-2 rounded-full animate-spin"
-              style={{ borderColor: "#f0eff8 transparent transparent transparent" }} />
+              style={{ borderColor: "var(--color-text-primary) transparent transparent transparent" }} />
             生成中...
           </span>
         ) : (

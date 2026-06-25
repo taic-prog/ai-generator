@@ -21,27 +21,27 @@ export default function Home() {
   }, [prompt, isGenerating, style, taste, generate]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0a0a0f" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-bg-main)" }}>
       <Header />
 
       <main className="flex-1 flex flex-col sm:flex-row overflow-hidden" style={{ minHeight: 0 }}>
         {/* 左ペイン */}
         <div
           className="w-full sm:w-1/2 flex flex-col gap-4 p-4 overflow-y-auto"
-          style={{ borderRight: "1px solid #1e1e2e" }}
+          style={{ borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: "var(--color-border)" }}
         >
           <div>
-            <h2 className="text-sm font-mono font-semibold mb-1" style={{ color: "#f0eff8" }}>
+            <h2 className="text-sm font-mono font-semibold mb-1" style={{ color: "var(--color-text-primary)" }}>
               プロンプト
             </h2>
-            <p className="text-xs font-mono" style={{ color: "#9999b3" }}>
+            <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
               作りたいアプリを日本語または英語で説明してください
             </p>
           </div>
 
           {/* スタイル選択 */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-mono" style={{ color: "#9999b3" }}>スタイル</p>
+            <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
             <div className="flex flex-wrap gap-2">
               {APP_STYLES.map((s) => {
                 const isSelected = style === s.id;
@@ -73,7 +73,7 @@ export default function Home() {
 
           {/* テイスト選択 */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-mono" style={{ color: "#9999b3" }}>テイスト</p>
+            <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>テイスト</p>
             <div className="flex flex-wrap gap-2">
               {APP_TASTES.map((t) => {
                 const isSelected = taste === t.id;
@@ -109,7 +109,7 @@ export default function Home() {
           {state.status === "error" && state.error && (
             <div
               className="rounded-lg px-4 py-3 text-sm font-mono"
-              style={{ backgroundColor: "#2a1a1a", color: "#f87171", border: "1px solid #3a2020" }}
+              style={{ backgroundColor: "var(--color-error-bg)", color: "var(--color-error)", borderWidth: "1px", borderStyle: "solid", borderColor: "var(--color-error-border)" }}
             >
               {state.error}
             </div>

@@ -8,10 +8,10 @@ interface StatusBarProps {
 }
 
 const STATUS_CONFIG: Record<GenerationStatus, { color: string; label: string; pulse: boolean }> = {
-  ready:      { color: "#9999b3", label: "Ready",      pulse: false },
-  generating: { color: "#7c6af7", label: "Generating", pulse: true  },
-  done:       { color: "#34d399", label: "Done",       pulse: false },
-  error:      { color: "#f87171", label: "Error",      pulse: false },
+  ready:      { color: "var(--color-text-secondary)", label: "Ready",      pulse: false },
+  generating: { color: "var(--color-accent)",         label: "Generating", pulse: true  },
+  done:       { color: "var(--color-success)",        label: "Done",       pulse: false },
+  error:      { color: "var(--color-error)",          label: "Error",      pulse: false },
 };
 
 export const StatusBar = memo(function StatusBar({ status, inputTokens, outputTokens }: StatusBarProps) {
@@ -21,7 +21,7 @@ export const StatusBar = memo(function StatusBar({ status, inputTokens, outputTo
   return (
     <footer
       className="flex items-center justify-between px-4 py-2 text-xs font-mono border-t"
-      style={{ backgroundColor: "#111118", borderColor: "#1e1e2e", color: "#9999b3" }}
+      style={{ backgroundColor: "var(--color-bg-surface)", borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
       aria-live="polite"
     >
       <div className="flex items-center gap-2">
@@ -35,13 +35,13 @@ export const StatusBar = memo(function StatusBar({ status, inputTokens, outputTo
       <div className="flex items-center gap-4">
         {hasTokens && (
           <span>
-            in: <span style={{ color: "#f0eff8" }}>{inputTokens.toLocaleString()}</span>
+            in: <span style={{ color: "var(--color-text-primary)" }}>{inputTokens.toLocaleString()}</span>
             {" / "}
-            out: <span style={{ color: "#f0eff8" }}>{outputTokens.toLocaleString()}</span>
+            out: <span style={{ color: "var(--color-text-primary)" }}>{outputTokens.toLocaleString()}</span>
             {" tokens"}
           </span>
         )}
-        <span style={{ color: "#3a3a5e" }}>{MODEL_NAME}</span>
+        <span style={{ color: "var(--color-dim)" }}>{MODEL_NAME}</span>
       </div>
     </footer>
   );
