@@ -42,7 +42,7 @@ export default function Home() {
           {/* スタイル選択 */}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
-            <div className="flex flex-wrap gap-2">
+            <div role="radiogroup" aria-label="スタイル" className="flex flex-wrap gap-2">
               {APP_STYLES.map((s) => {
                 const isSelected = style === s.id;
                 return (
@@ -50,7 +50,8 @@ export default function Home() {
                     key={s.id}
                     onClick={() => setStyle(s.id)}
                     disabled={isGenerating}
-                    aria-pressed={isSelected}
+                    role="radio"
+                    aria-checked={isSelected}
                     className="chip-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       borderWidth: "1px",
@@ -72,7 +73,7 @@ export default function Home() {
           {/* テイスト選択 */}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>テイスト</p>
-            <div className="flex flex-wrap gap-2">
+            <div role="radiogroup" aria-label="テイスト" className="flex flex-wrap gap-2">
               {APP_TASTES.map((t) => {
                 const isSelected = taste === t.id;
                 return (
@@ -80,7 +81,8 @@ export default function Home() {
                     key={t.id}
                     onClick={() => setTaste(t.id)}
                     disabled={isGenerating}
-                    aria-pressed={isSelected}
+                    role="radio"
+                    aria-checked={isSelected}
                     className="chip-btn px-3 py-1.5 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       borderWidth: "1px",

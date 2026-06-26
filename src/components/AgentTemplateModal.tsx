@@ -16,9 +16,11 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   const [error, setError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
-  const isDownloadingRef = useRef(isDownloading);
-  useEffect(() => { onCloseRef.current = onClose; });
-  useEffect(() => { isDownloadingRef.current = isDownloading; });
+  const isDownloadingRef = useRef(false);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    isDownloadingRef.current = isDownloading;
+  });
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -32,7 +34,12 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         const focusable = panelRef.current.querySelectorAll<HTMLElement>(
           'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
         );
-        if (focusable.length === 0) return;
+        if (focusable.length === 0) {
+          // ダウンロード中は全要素が disabled になるためパネル自身にフォーカスを閉じ込める
+          e.preventDefault();
+          panelRef.current.focus();
+          return;
+        }
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
         const active = document.activeElement;
@@ -59,12 +66,14 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     setError(null);
     try {
       await onConfirm(selectedIds);
-      onClose();
     } catch {
       setError("ダウンロードに失敗しました。もう一度お試しください。");
-    } finally {
       setIsDownloading(false);
+      return;
     }
+    // setIsDownloading を onCloseRef より先に呼びアンマウント前に状態をリセットする
+    setIsDownloading(false);
+    onCloseRef.current();
   }
 
   return (
@@ -94,7 +103,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
           {AGENT_TEMPLATES.map((agent) => (
             <label
               key={agent.id}
-              className="flex items-start gap-2 px-2.5 py-2 rounded cursor-pointer"
+              className={`flex items-start gap-2 px-2.5 py-2 rounded ${isDownloading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
               style={{ backgroundColor: "var(--color-border)" }}
             >
               <input
@@ -102,7 +111,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
                 checked={selectedIds.includes(agent.id)}
                 onChange={() => toggle(agent.id)}
                 disabled={isDownloading}
-                className="mt-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="mt-0.5"
               />
               <span>
                 <span className="block text-xs font-mono" style={{ color: "var(--color-text-primary)" }}>

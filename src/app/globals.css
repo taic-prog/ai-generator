@@ -73,17 +73,21 @@ body {
   background: var(--color-scrollbar-thumb-hover);
 }
 
-/* chip ボタン: inline style から bg/color を外すことで :hover/:focus-visible が cascade で勝てる */
+/*
+ * chip ボタン: bg/color を CSS で管理することで :hover/:focus-visible が cascade で勝てる。
+ * aria-checked の複合 :not() セレクタは Tailwind ユーティリティ単体で表現できないため
+ * 既存の globals.css に追記している（新規 CSS ファイルは作成していない）。
+ */
 .chip-btn {
   background-color: var(--color-bg-surface);
   color: var(--color-text-secondary);
 }
-.chip-btn[aria-pressed="true"] {
+.chip-btn[aria-checked="true"] {
   background-color: var(--color-bg-selected);
   color: var(--color-text-primary);
 }
-.chip-btn:not([aria-pressed="true"]):not(:disabled):hover,
-.chip-btn:not([aria-pressed="true"]):not(:disabled):focus-visible {
+.chip-btn:not([aria-checked="true"]):not(:disabled):hover,
+.chip-btn:not([aria-checked="true"]):not(:disabled):focus-visible {
   background-color: var(--color-bg-hover);
   color: var(--color-text-primary);
 }
