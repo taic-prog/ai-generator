@@ -72,3 +72,10 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-scrollbar-thumb-hover);
 }
+
+/* aria-pressed="false" かつ disabled でない chip ボタンのホバー・フォーカス */
+.chip-btn:not([aria-pressed="true"]):not(:disabled):hover,
+.chip-btn:not([aria-pressed="true"]):not(:disabled):focus-visible {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}

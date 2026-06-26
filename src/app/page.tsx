@@ -51,27 +51,13 @@ export default function Home() {
                     onClick={() => setStyle(s.id)}
                     disabled={isGenerating}
                     aria-pressed={isSelected}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="chip-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
                       color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
                       borderWidth: "1px",
                       borderStyle: "solid",
                       borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected && !isGenerating) {
-                        const btn = e.currentTarget as HTMLButtonElement;
-                        btn.style.backgroundColor = "var(--color-bg-hover)";
-                        btn.style.color = "var(--color-text-primary)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        const btn = e.currentTarget as HTMLButtonElement;
-                        btn.style.backgroundColor = "var(--color-bg-surface)";
-                        btn.style.color = "var(--color-text-secondary)";
-                      }
                     }}
                   >
                     <span
@@ -97,27 +83,13 @@ export default function Home() {
                     onClick={() => setTaste(t.id)}
                     disabled={isGenerating}
                     aria-pressed={isSelected}
-                    className="px-3 py-1.5 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="chip-btn px-3 py-1.5 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
                       color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
                       borderWidth: "1px",
                       borderStyle: "solid",
                       borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected && !isGenerating) {
-                        const btn = e.currentTarget as HTMLButtonElement;
-                        btn.style.backgroundColor = "var(--color-bg-hover)";
-                        btn.style.color = "var(--color-text-primary)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        const btn = e.currentTarget as HTMLButtonElement;
-                        btn.style.backgroundColor = "var(--color-bg-surface)";
-                        btn.style.color = "var(--color-text-secondary)";
-                      }
                     }}
                   >
                     {t.label}

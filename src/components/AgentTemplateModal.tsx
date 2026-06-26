@@ -15,13 +15,15 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
   useEffect(() => {
     panelRef.current?.focus();
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && panelRef.current) {
@@ -43,7 +45,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, []);
 
   function toggle(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
@@ -66,7 +68,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: "var(--color-overlay)" }}
-      onClick={onClose}
+      onClick={() => { if (!isDownloading) onClose(); }}
     >
       <div
         ref={panelRef}

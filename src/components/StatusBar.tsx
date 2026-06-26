@@ -8,7 +8,7 @@ interface StatusBarProps {
 }
 
 const STATUS_CONFIG: Record<GenerationStatus, { color: string; label: string; pulse: boolean }> = {
-  ready:      { color: "var(--color-dim)",            label: "Ready",      pulse: false },
+  ready:      { color: "var(--color-text-secondary)", label: "Ready",      pulse: false },
   generating: { color: "var(--color-accent)",         label: "Generating", pulse: true  },
   done:       { color: "var(--color-success)",        label: "Done",       pulse: false },
   error:      { color: "var(--color-error)",          label: "Error",      pulse: false },
@@ -41,7 +41,7 @@ export const StatusBar = memo(function StatusBar({ status, inputTokens, outputTo
             {" tokens"}
           </span>
         )}
-        <span style={{ color: "var(--color-dim)" }}>{MODEL_NAME}</span>
+        <span style={{ color: "var(--color-text-secondary)" }}>{MODEL_NAME}</span>
       </div>
     </footer>
   );
