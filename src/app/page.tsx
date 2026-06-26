@@ -53,8 +53,6 @@ export default function Home() {
                     aria-pressed={isSelected}
                     className="chip-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
-                      backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
-                      color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
                       borderWidth: "1px",
                       borderStyle: "solid",
                       borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",
@@ -85,8 +83,6 @@ export default function Home() {
                     aria-pressed={isSelected}
                     className="chip-btn px-3 py-1.5 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
-                      backgroundColor: isSelected ? "var(--color-bg-selected)" : "var(--color-bg-surface)",
-                      color: isSelected ? "var(--color-text-primary)" : "var(--color-text-secondary)",
                       borderWidth: "1px",
                       borderStyle: "solid",
                       borderColor: isSelected ? "var(--color-accent)" : "var(--color-border)",

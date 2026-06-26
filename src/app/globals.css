@@ -73,7 +73,15 @@ body {
   background: var(--color-scrollbar-thumb-hover);
 }
 
-/* aria-pressed="false" かつ disabled でない chip ボタンのホバー・フォーカス */
+/* chip ボタン: inline style から bg/color を外すことで :hover/:focus-visible が cascade で勝てる */
+.chip-btn {
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+}
+.chip-btn[aria-pressed="true"] {
+  background-color: var(--color-bg-selected);
+  color: var(--color-text-primary);
+}
 .chip-btn:not([aria-pressed="true"]):not(:disabled):hover,
 .chip-btn:not([aria-pressed="true"]):not(:disabled):focus-visible {
   background-color: var(--color-bg-hover);

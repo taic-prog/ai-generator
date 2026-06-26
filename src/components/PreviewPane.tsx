@@ -121,7 +121,7 @@ function ToolbarButton({
 function Placeholder({ status }: { status: GenerationStatus }) {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-3"
-      style={{ color: "var(--color-dim)" }}>
+      style={{ color: "var(--color-text-secondary)" }}>
       {status === "generating" ? (
         <>
           <span className="inline-block w-8 h-8 border-2 rounded-full animate-spin"

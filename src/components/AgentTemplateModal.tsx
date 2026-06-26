@@ -16,27 +16,30 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   const [error, setError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  const isDownloadingRef = useRef(isDownloading);
   useEffect(() => { onCloseRef.current = onClose; });
+  useEffect(() => { isDownloadingRef.current = isDownloading; });
 
   useEffect(() => {
     panelRef.current?.focus();
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        onCloseRef.current();
+        if (!isDownloadingRef.current) onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && panelRef.current) {
         const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
         );
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || active === panelRef.current)) {
           e.preventDefault();
           last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (!e.shiftKey && active === last) {
           e.preventDefault();
           first.focus();
         }
@@ -98,7 +101,8 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
                 type="checkbox"
                 checked={selectedIds.includes(agent.id)}
                 onChange={() => toggle(agent.id)}
-                className="mt-0.5"
+                disabled={isDownloading}
+                className="mt-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
               />
               <span>
                 <span className="block text-xs font-mono" style={{ color: "var(--color-text-primary)" }}>
