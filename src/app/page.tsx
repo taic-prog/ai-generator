@@ -1,12 +1,30 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Header } from "@/components/Header";
 import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
 import { StatusBar } from "@/components/StatusBar";
 import { useGenerate } from "@/hooks/useGenerate";
 import { AppStyle, APP_STYLES, AppTaste, APP_TASTES } from "@/types";
+
+// APG radiogroup パターン: roving tabindex + 矢印キーで選択移動。Enter 抑止は各ボタン側で行う
+function makeRadioKeyDown<T extends string>(setter: (val: T) => void) {
+  return (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+    e.preventDefault();
+    const radios = Array.from(
+      e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")
+    );
+    const idx = radios.indexOf(document.activeElement as HTMLButtonElement);
+    if (idx === -1) return;
+    const delta = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
+    const next = radios[(idx + delta + radios.length) % radios.length];
+    next.focus();
+    if (!next.dataset.value) return;
+    setter(next.dataset.value as T);
+  };
+}
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -41,32 +59,19 @@ export default function Home() {
 
           {/* スタイル選択 */}
           <div className="flex flex-col gap-2">
-            {/* Fix #6: aria-labelledby で可視テキストと accessible name を一元管理 */}
             <p id="style-label" className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
-            {/* Fix #1: roving tabindex + 矢印キーハンドラで APG radiogroup キーボードパターンを実装 */}
             <div
               role="radiogroup"
               aria-labelledby="style-label"
               className="flex flex-wrap gap-2"
-              onKeyDown={(e) => {
-                if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
-                e.preventDefault();
-                const radios = Array.from(
-                  e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")
-                );
-                const idx = radios.indexOf(document.activeElement as HTMLButtonElement);
-                if (idx === -1) return;
-                const delta = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
-                const next = radios[(idx + delta + radios.length) % radios.length];
-                next.focus();
-                setStyle(next.dataset.value as AppStyle);
-              }}
+              onKeyDown={makeRadioKeyDown<AppStyle>(setStyle)}
             >
               {APP_STYLES.map((s) => {
                 const isSelected = style === s.id;
                 return (
                   <button
                     key={s.id}
+                    type="button"
                     data-value={s.id}
                     onClick={() => setStyle(s.id)}
                     disabled={isGenerating}
@@ -99,25 +104,14 @@ export default function Home() {
               role="radiogroup"
               aria-labelledby="taste-label"
               className="flex flex-wrap gap-2"
-              onKeyDown={(e) => {
-                if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
-                e.preventDefault();
-                const radios = Array.from(
-                  e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")
-                );
-                const idx = radios.indexOf(document.activeElement as HTMLButtonElement);
-                if (idx === -1) return;
-                const delta = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
-                const next = radios[(idx + delta + radios.length) % radios.length];
-                next.focus();
-                setTaste(next.dataset.value as AppTaste);
-              }}
+              onKeyDown={makeRadioKeyDown<AppTaste>(setTaste)}
             >
               {APP_TASTES.map((t) => {
                 const isSelected = taste === t.id;
                 return (
                   <button
                     key={t.id}
+                    type="button"
                     data-value={t.id}
                     onClick={() => setTaste(t.id)}
                     disabled={isGenerating}
@@ -148,6 +142,7 @@ export default function Home() {
 
           {state.status === "error" && state.error && (
             <div
+              role="alert"
               className="rounded-lg px-4 py-3 text-sm font-mono"
               style={{ backgroundColor: "var(--color-error-bg)", color: "var(--color-error)", borderWidth: "1px", borderStyle: "solid", borderColor: "var(--color-error-border)" }}
             >

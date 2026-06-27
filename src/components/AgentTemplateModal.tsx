@@ -20,7 +20,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     isDownloadingRef.current = isDownloading;
   });
 
-  // Fix #9: useId でインスタンスごとに一意な id を生成（静的文字列は複数マウント時に id が衝突する）
+  // useId でインスタンスごとに一意な id を生成（静的文字列は複数マウント時に id が衝突する）
   const titleId = useId();
   const descId = useId();
 
@@ -45,11 +45,17 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
         const active = document.activeElement;
+        // スクリーンリーダー操作等で modal 外にフォーカスが脱出した場合を先頭で回収する
+        if (!panelRef.current.contains(active)) {
+          e.preventDefault();
+          first.focus();
+          return;
+        }
         if (e.shiftKey && (active === first || active === panelRef.current)) {
           e.preventDefault();
           last.focus();
         } else if (!e.shiftKey && (active === last || active === panelRef.current)) {
-          // Fix #7: panelRef にフォーカスがある場合も明示的に first へ移動しブラウザ依存を排除
+          // panelRef にフォーカスがある場合も明示的に first へ移動しブラウザ依存を排除
           e.preventDefault();
           first.focus();
         }
@@ -65,27 +71,34 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   }
 
   async function handleConfirm() {
-    if (isDownloading) return; // Fix #3: 同一フレーム内の二重呼び出しを防ぐ
-    setIsDownloading(true);
-    setError(null);
+    // isDownloadingRef を同期的に読み書きすることで Escape/バックドロップの stale window も防ぐ
+    if (isDownloadingRef.current) return;
+    isDownloadingRef.current = true;
     try {
+      setIsDownloading(true);
+      setError(null);
       await onConfirm(selectedIds);
     } catch (err) {
-      console.error("[AgentTemplateModal] download failed", err); // Fix #2: エラーを捨てず記録
+      console.error("[AgentTemplateModal] download failed", err);
       setError("ダウンロードに失敗しました。もう一度お試しください。");
-      return;
+      return; // エラー時は以下の onCloseRef.current() を呼ばないための return（finally 後も関数を終了する）
     } finally {
-      // Fix #5: finally で一元管理することで setIsDownloading の漏れを防ぐ
+      // finally で一元管理することで setIsDownloading の漏れを防ぐ
+      isDownloadingRef.current = false;
       setIsDownloading(false);
     }
-    onCloseRef.current();
+    try {
+      onCloseRef.current();
+    } catch (err) {
+      console.error("[AgentTemplateModal] onClose threw", err);
+    }
   }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: "var(--color-overlay)" }}
-      onClick={() => { if (!isDownloading) onClose(); }}
+      onClick={() => { if (!isDownloadingRef.current) onClose(); }}
     >
       <div
         ref={panelRef}
@@ -101,7 +114,6 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         <h2 id={titleId} className="text-sm font-mono mb-1" style={{ color: "var(--color-text-primary)" }}>
           含めるサブエージェントを選択
         </h2>
-        {/* Fix #8: aria-describedby でダイアログ開幕時にスクリーンリーダーが字幕を読み上げる */}
         <p id={descId} className="text-xs font-mono mb-4" style={{ color: "var(--color-text-secondary)" }}>
           CLAUDE.md・コーディング規約・セキュリティルールは常に含まれます
         </p>
@@ -133,12 +145,12 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         </div>
 
         {selectedIds.length === 0 && (
-          <p className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
+          <p role="alert" className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
             少なくとも1つ選択してください
           </p>
         )}
         {error && (
-          <p className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
+          <p role="alert" className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
             {error}
           </p>
         )}
