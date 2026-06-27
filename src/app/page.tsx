@@ -16,7 +16,7 @@ function makeRadioKeyDown<T extends string>(setter: (val: T) => void) {
     const radios = Array.from(
       e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")
     );
-    const idx = radios.indexOf(document.activeElement as HTMLButtonElement);
+    const idx = radios.indexOf(e.target as HTMLButtonElement);
     if (idx === -1) return;
     const delta = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
     const next = radios[(idx + delta + radios.length) % radios.length];

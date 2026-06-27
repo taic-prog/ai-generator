@@ -12,24 +12,32 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   const [selectedIds, setSelectedIds] = useState<string[]>(() => AGENT_TEMPLATES.map((agent) => agent.id));
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [a11yAnnounce, setA11yAnnounce] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const isDownloadingRef = useRef(false);
+
+  // onCloseRef を最新の prop に同期する（空 deps の keydown クロージャが stale にならないため）
   useEffect(() => {
     onCloseRef.current = onClose;
-    isDownloadingRef.current = isDownloading;
-  });
+  }, [onClose]);
 
   // useId でインスタンスごとに一意な id を生成（静的文字列は複数マウント時に id が衝突する）
   const titleId = useId();
   const descId = useId();
 
   useEffect(() => {
+    const prevFocus = document.activeElement as HTMLElement | null;
     panelRef.current?.focus();
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (!isDownloadingRef.current) onCloseRef.current();
+        if (isDownloadingRef.current) {
+          // ダウンロード中は閉じられないことをスクリーンリーダーへ通知
+          setA11yAnnounce("ダウンロード中のため閉じられません");
+          return;
+        }
+        onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && panelRef.current) {
@@ -63,10 +71,14 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     }
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      prevFocus?.focus();
+    };
   }, []);
 
   function toggle(id: string) {
+    setError(null);
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
   }
 
@@ -74,23 +86,28 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     // isDownloadingRef を同期的に読み書きすることで Escape/バックドロップの stale window も防ぐ
     if (isDownloadingRef.current) return;
     isDownloadingRef.current = true;
+    let succeeded = false;
     try {
       setIsDownloading(true);
       setError(null);
+      setA11yAnnounce("");
       await onConfirm(selectedIds);
+      succeeded = true;
     } catch (err) {
       console.error("[AgentTemplateModal] download failed", err);
       setError("ダウンロードに失敗しました。もう一度お試しください。");
-      return; // エラー時は以下の onCloseRef.current() を呼ばないための return（finally 後も関数を終了する）
     } finally {
       // finally で一元管理することで setIsDownloading の漏れを防ぐ
       isDownloadingRef.current = false;
       setIsDownloading(false);
     }
-    try {
-      onCloseRef.current();
-    } catch (err) {
-      console.error("[AgentTemplateModal] onClose threw", err);
+    if (succeeded) {
+      try {
+        onCloseRef.current();
+      } catch (err) {
+        console.error("[AgentTemplateModal] onClose threw", err);
+        setError("モーダルを閉じることができませんでした。");
+      }
     }
   }
 
@@ -106,6 +123,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
+        aria-busy={isDownloading}
         tabIndex={-1}
         className="w-full max-w-md rounded-lg border p-5"
         style={{ backgroundColor: "var(--color-bg-surface)", borderColor: "var(--color-border)" }}
@@ -117,6 +135,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         <p id={descId} className="text-xs font-mono mb-4" style={{ color: "var(--color-text-secondary)" }}>
           CLAUDE.md・コーディング規約・セキュリティルールは常に含まれます
         </p>
+        <span className="sr-only" aria-live="polite">{a11yAnnounce}</span>
 
         <div className="flex flex-col gap-2 mb-3">
           {AGENT_TEMPLATES.map((agent) => (
@@ -157,7 +176,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
 
         <div className="flex justify-end gap-2">
           <button
-            onClick={onClose}
+            onClick={() => { if (!isDownloadingRef.current) onClose(); }}
             disabled={isDownloading}
             className="text-xs font-mono px-3 py-1.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
