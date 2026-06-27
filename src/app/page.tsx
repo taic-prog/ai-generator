@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useId, useState } from "react";
 import { Header } from "@/components/Header";
 import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
@@ -21,7 +21,7 @@ function makeRadioKeyDown<T extends string>(setter: (val: T) => void) {
     const delta = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
     const next = radios[(idx + delta + radios.length) % radios.length];
     next.focus();
-    if (!next.dataset.value) return;
+    if (next.dataset.value === undefined) return;
     setter(next.dataset.value as T);
   };
 }
@@ -30,6 +30,8 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState<AppStyle>("dark");
   const [taste, setTaste] = useState<AppTaste>("cool");
+  const styleId = useId();
+  const tasteId = useId();
   const { state, generate } = useGenerate();
   const isGenerating = state.status === "generating";
 
@@ -59,10 +61,10 @@ export default function Home() {
 
           {/* スタイル選択 */}
           <div className="flex flex-col gap-2">
-            <p id="style-label" className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
+            <p id={styleId} className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
             <div
               role="radiogroup"
-              aria-labelledby="style-label"
+              aria-labelledby={styleId}
               className="flex flex-wrap gap-2"
               onKeyDown={makeRadioKeyDown<AppStyle>(setStyle)}
             >
@@ -99,10 +101,10 @@ export default function Home() {
 
           {/* テイスト選択 */}
           <div className="flex flex-col gap-2">
-            <p id="taste-label" className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>テイスト</p>
+            <p id={tasteId} className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>テイスト</p>
             <div
               role="radiogroup"
-              aria-labelledby="taste-label"
+              aria-labelledby={tasteId}
               className="flex flex-wrap gap-2"
               onKeyDown={makeRadioKeyDown<AppTaste>(setTaste)}
             >

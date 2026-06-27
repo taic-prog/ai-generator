@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { AGENT_TEMPLATES } from "@/lib/agentTemplates";
 
 interface AgentTemplateModalProps {
@@ -12,8 +12,10 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   const [selectedIds, setSelectedIds] = useState<string[]>(() => AGENT_TEMPLATES.map((agent) => agent.id));
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [a11yAnnounce, setA11yAnnounce] = useState("");
+  // null のとき span を DOM から除去し、非空→空の遷移で AT が「blank」を読まないようにする
+  const [a11yAnnounce, setA11yAnnounce] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const onCloseRef = useRef(onClose);
   const isDownloadingRef = useRef(false);
 
@@ -22,19 +24,25 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  // useId でインスタンスごとに一意な id を生成（静的文字列は複数マウント時に id が衝突する）
   const titleId = useId();
   const descId = useId();
 
+  // ダウンロード失敗時にエラー段落へフォーカスを移動し AT が即読み上げできるようにする
   useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
+
+  // DOM 確定後・ペイント前にフォーカスを移動するため useLayoutEffect を使用
+  useLayoutEffect(() => {
     const prevFocus = document.activeElement as HTMLElement | null;
     panelRef.current?.focus();
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         if (isDownloadingRef.current) {
-          // ダウンロード中は閉じられないことをスクリーンリーダーへ通知
-          setA11yAnnounce("ダウンロード中のため閉じられません");
+          // null→メッセージの2段階更新で、繰り返し押下時も AT が毎回告知できるようにする
+          setA11yAnnounce(null);
+          requestAnimationFrame(() => setA11yAnnounce("ダウンロード中のため閉じられません"));
           return;
         }
         onCloseRef.current();
@@ -48,6 +56,8 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
           // ダウンロード中は全要素が disabled になるためパネル自身にフォーカスを閉じ込める
           e.preventDefault();
           panelRef.current.focus();
+          setA11yAnnounce(null);
+          requestAnimationFrame(() => setA11yAnnounce("ダウンロード中のため操作できません"));
           return;
         }
         const first = focusable[0];
@@ -73,7 +83,8 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      prevFocus?.focus();
+      // isConnected で切り離し済み要素への focus() を防ぐ
+      if (prevFocus?.isConnected) prevFocus.focus();
     };
   }, []);
 
@@ -82,32 +93,45 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
   }
 
+  // backdrop・キャンセルボタン共通: ダウンロード中はブロックして AT へ告知する
+  function handleDismiss() {
+    if (isDownloadingRef.current) {
+      setA11yAnnounce(null);
+      requestAnimationFrame(() => setA11yAnnounce("ダウンロード中のため閉じられません"));
+      return;
+    }
+    onCloseRef.current();
+  }
+
   async function handleConfirm() {
-    // isDownloadingRef を同期的に読み書きすることで Escape/バックドロップの stale window も防ぐ
     if (isDownloadingRef.current) return;
     isDownloadingRef.current = true;
     let succeeded = false;
     try {
       setIsDownloading(true);
       setError(null);
-      setA11yAnnounce("");
+      setA11yAnnounce(null);
       await onConfirm(selectedIds);
       succeeded = true;
     } catch (err) {
       console.error("[AgentTemplateModal] download failed", err);
       setError("ダウンロードに失敗しました。もう一度お試しください。");
     } finally {
-      // finally で一元管理することで setIsDownloading の漏れを防ぐ
       isDownloadingRef.current = false;
       setIsDownloading(false);
+      // aria-busy 解除時に残留メッセージが AT でフラッシュされないよう事前にクリアする
+      setA11yAnnounce(null);
     }
     if (succeeded) {
-      try {
-        onCloseRef.current();
-      } catch (err) {
-        console.error("[AgentTemplateModal] onClose threw", err);
-        setError("モーダルを閉じることができませんでした。");
-      }
+      setA11yAnnounce("ダウンロードが完了しました");
+      // polite アナウンスが AT に処理されてからモーダルを閉じる
+      setTimeout(() => {
+        try {
+          onCloseRef.current();
+        } catch (err) {
+          console.error("[AgentTemplateModal] onClose threw", err);
+        }
+      }, 200);
     }
   }
 
@@ -115,15 +139,18 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: "var(--color-overlay)" }}
-      onClick={() => { if (!isDownloadingRef.current) onClose(); }}
+      onClick={handleDismiss}
     >
+      {/* aria-busy の外側に配置し、ダウンロード中でも AT が live region を受信できるようにする */}
+      {a11yAnnounce !== null && (
+        <span className="sr-only" aria-live="polite">{a11yAnnounce}</span>
+      )}
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        aria-busy={isDownloading}
         tabIndex={-1}
         className="w-full max-w-md rounded-lg border p-5"
         style={{ backgroundColor: "var(--color-bg-surface)", borderColor: "var(--color-border)" }}
@@ -135,7 +162,6 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         <p id={descId} className="text-xs font-mono mb-4" style={{ color: "var(--color-text-secondary)" }}>
           CLAUDE.md・コーディング規約・セキュリティルールは常に含まれます
         </p>
-        <span className="sr-only" aria-live="polite">{a11yAnnounce}</span>
 
         <div className="flex flex-col gap-2 mb-3">
           {AGENT_TEMPLATES.map((agent) => (
@@ -169,14 +195,14 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
           </p>
         )}
         {error && (
-          <p role="alert" className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
+          <p ref={errorRef} tabIndex={-1} role="alert" className="text-xs font-mono mb-3" style={{ color: "var(--color-error)" }}>
             {error}
           </p>
         )}
 
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => { if (!isDownloadingRef.current) onClose(); }}
+            onClick={handleDismiss}
             disabled={isDownloading}
             className="text-xs font-mono px-3 py-1.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
