@@ -41,17 +41,39 @@ export default function Home() {
 
           {/* スタイル選択 */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
-            <div role="radiogroup" aria-label="スタイル" className="flex flex-wrap gap-2">
+            {/* Fix #6: aria-labelledby で可視テキストと accessible name を一元管理 */}
+            <p id="style-label" className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
+            {/* Fix #1: roving tabindex + 矢印キーハンドラで APG radiogroup キーボードパターンを実装 */}
+            <div
+              role="radiogroup"
+              aria-labelledby="style-label"
+              className="flex flex-wrap gap-2"
+              onKeyDown={(e) => {
+                if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+                e.preventDefault();
+                const radios = Array.from(
+                  e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")
+                );
+                const idx = radios.indexOf(document.activeElement as HTMLButtonElement);
+                if (idx === -1) return;
+                const delta = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
+                const next = radios[(idx + delta + radios.length) % radios.length];
+                next.focus();
+                setStyle(next.dataset.value as AppStyle);
+              }}
+            >
               {APP_STYLES.map((s) => {
                 const isSelected = style === s.id;
                 return (
                   <button
                     key={s.id}
+                    data-value={s.id}
                     onClick={() => setStyle(s.id)}
                     disabled={isGenerating}
                     role="radio"
                     aria-checked={isSelected}
+                    tabIndex={isSelected ? 0 : -1}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
                     className="chip-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       borderWidth: "1px",
@@ -72,17 +94,37 @@ export default function Home() {
 
           {/* テイスト選択 */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>テイスト</p>
-            <div role="radiogroup" aria-label="テイスト" className="flex flex-wrap gap-2">
+            <p id="taste-label" className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>テイスト</p>
+            <div
+              role="radiogroup"
+              aria-labelledby="taste-label"
+              className="flex flex-wrap gap-2"
+              onKeyDown={(e) => {
+                if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+                e.preventDefault();
+                const radios = Array.from(
+                  e.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")
+                );
+                const idx = radios.indexOf(document.activeElement as HTMLButtonElement);
+                if (idx === -1) return;
+                const delta = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
+                const next = radios[(idx + delta + radios.length) % radios.length];
+                next.focus();
+                setTaste(next.dataset.value as AppTaste);
+              }}
+            >
               {APP_TASTES.map((t) => {
                 const isSelected = taste === t.id;
                 return (
                   <button
                     key={t.id}
+                    data-value={t.id}
                     onClick={() => setTaste(t.id)}
                     disabled={isGenerating}
                     role="radio"
                     aria-checked={isSelected}
+                    tabIndex={isSelected ? 0 : -1}
+                    onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
                     className="chip-btn px-3 py-1.5 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       borderWidth: "1px",

@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AGENT_TEMPLATES } from "@/lib/agentTemplates";
 
 interface AgentTemplateModalProps {
   onClose: () => void;
   onConfirm: (selectedAgentIds: string[]) => Promise<void>;
 }
-
-const TITLE_ID = "agent-template-modal-title";
 
 export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>(() => AGENT_TEMPLATES.map((agent) => agent.id));
@@ -21,6 +19,10 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     onCloseRef.current = onClose;
     isDownloadingRef.current = isDownloading;
   });
+
+  // Fix #9: useId でインスタンスごとに一意な id を生成（静的文字列は複数マウント時に id が衝突する）
+  const titleId = useId();
+  const descId = useId();
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -46,7 +48,8 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         if (e.shiftKey && (active === first || active === panelRef.current)) {
           e.preventDefault();
           last.focus();
-        } else if (!e.shiftKey && active === last) {
+        } else if (!e.shiftKey && (active === last || active === panelRef.current)) {
+          // Fix #7: panelRef にフォーカスがある場合も明示的に first へ移動しブラウザ依存を排除
           e.preventDefault();
           first.focus();
         }
@@ -62,17 +65,19 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   }
 
   async function handleConfirm() {
+    if (isDownloading) return; // Fix #3: 同一フレーム内の二重呼び出しを防ぐ
     setIsDownloading(true);
     setError(null);
     try {
       await onConfirm(selectedIds);
-    } catch {
+    } catch (err) {
+      console.error("[AgentTemplateModal] download failed", err); // Fix #2: エラーを捨てず記録
       setError("ダウンロードに失敗しました。もう一度お試しください。");
-      setIsDownloading(false);
       return;
+    } finally {
+      // Fix #5: finally で一元管理することで setIsDownloading の漏れを防ぐ
+      setIsDownloading(false);
     }
-    // setIsDownloading を onCloseRef より先に呼びアンマウント前に状態をリセットする
-    setIsDownloading(false);
     onCloseRef.current();
   }
 
@@ -86,16 +91,18 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={TITLE_ID}
+        aria-labelledby={titleId}
+        aria-describedby={descId}
         tabIndex={-1}
         className="w-full max-w-md rounded-lg border p-5"
         style={{ backgroundColor: "var(--color-bg-surface)", borderColor: "var(--color-border)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={TITLE_ID} className="text-sm font-mono mb-1" style={{ color: "var(--color-text-primary)" }}>
+        <h2 id={titleId} className="text-sm font-mono mb-1" style={{ color: "var(--color-text-primary)" }}>
           含めるサブエージェントを選択
         </h2>
-        <p className="text-xs font-mono mb-4" style={{ color: "var(--color-text-secondary)" }}>
+        {/* Fix #8: aria-describedby でダイアログ開幕時にスクリーンリーダーが字幕を読み上げる */}
+        <p id={descId} className="text-xs font-mono mb-4" style={{ color: "var(--color-text-secondary)" }}>
           CLAUDE.md・コーディング規約・セキュリティルールは常に含まれます
         </p>
 
