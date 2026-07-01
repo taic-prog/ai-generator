@@ -32,13 +32,20 @@ export default function Home() {
   const [taste, setTaste] = useState<AppTaste>("cool");
   const styleId = useId();
   const tasteId = useId();
-  const { state, generate } = useGenerate();
+  const { state, history, generate, reset } = useGenerate();
   const isGenerating = state.status === "generating";
+  const isFollowUp = history.length > 0;
 
   const handleSubmit = useCallback(() => {
     if (prompt.trim() === "" || isGenerating) return;
     generate(prompt, style, taste);
+    setPrompt("");
   }, [prompt, isGenerating, style, taste, generate]);
+
+  const handleReset = useCallback(() => {
+    reset();
+    setPrompt("");
+  }, [reset]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-bg-main)" }}>
@@ -50,13 +57,38 @@ export default function Home() {
           className="w-full sm:w-1/2 flex flex-col gap-4 p-4 overflow-y-auto"
           style={{ borderRightWidth: "1px", borderRightStyle: "solid", borderRightColor: "var(--color-border)" }}
         >
-          <div>
-            <h2 className="text-sm font-mono font-semibold mb-1" style={{ color: "var(--color-text-primary)" }}>
-              プロンプト
-            </h2>
-            <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
-              作りたいアプリを日本語または英語で説明してください
-            </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-sm font-mono font-semibold mb-1" style={{ color: "var(--color-text-primary)" }}>
+                {isFollowUp ? "変更指示" : "プロンプト"}
+              </h2>
+              <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
+                {isFollowUp
+                  ? `${history.length}回目の編集 — 変更点を入力してください`
+                  : "作りたいアプリを日本語または英語で説明してください"}
+              </p>
+            </div>
+            {isFollowUp && (
+              <button
+                onClick={handleReset}
+                disabled={isGenerating}
+                className="shrink-0 text-xs font-mono px-2.5 py-1 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-text-secondary)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isGenerating) (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
+                }}
+              >
+                最初から
+              </button>
+            )}
           </div>
 
           {/* スタイル選択 */}
@@ -140,6 +172,7 @@ export default function Home() {
             onChange={setPrompt}
             onSubmit={handleSubmit}
             isGenerating={isGenerating}
+            isFollowUp={isFollowUp}
           />
 
           {state.status === "error" && state.error && (

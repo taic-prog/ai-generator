@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt } from "@/lib/systemPrompt";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
-import { MODEL_NAME, MAX_PROMPT_LENGTH, AppStyle, APP_STYLES, AppTaste, APP_TASTES } from "@/types";
+import { MODEL_NAME, MAX_PROMPT_LENGTH, MAX_HISTORY_TURNS, AppStyle, APP_STYLES, AppTaste, APP_TASTES } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -10,6 +10,8 @@ export const runtime = "nodejs";
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
 const VALID_STYLE_IDS = new Set<string>(APP_STYLES.map((s) => s.id));
 const VALID_TASTE_IDS = new Set<string>(APP_TASTES.map((t) => t.id));
+
+type MessageParam = { role: "user" | "assistant"; content: string };
 
 export async function POST(request: Request) {
   const headersList = await headers();
@@ -24,30 +26,53 @@ export async function POST(request: Request) {
     );
   }
 
-  let prompt: string;
+  let messages: MessageParam[];
   let style: AppStyle;
   let taste: AppTaste;
+  let isFollowUp = false;
+
   try {
     const body = await request.json();
-    prompt = body.prompt;
     style = typeof body.style === "string" && VALID_STYLE_IDS.has(body.style)
       ? (body.style as AppStyle)
       : "dark";
     taste = typeof body.taste === "string" && VALID_TASTE_IDS.has(body.taste)
       ? (body.taste as AppTaste)
       : "cool";
+
+    if (!Array.isArray(body.messages) || body.messages.length === 0) {
+      return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
+    }
+
+    // ターン数バリデーション（history turns * 2 messages + 1 latest user message）
+    if (body.messages.length > MAX_HISTORY_TURNS * 2 + 1) {
+      return Response.json({ error: "会話履歴が長すぎます" }, { status: 400 });
+    }
+
+    // ロール交互バリデーション（user/assistant/.../user で終わること）
+    for (let i = 0; i < body.messages.length; i++) {
+      const msg = body.messages[i];
+      const expectedRole = i % 2 === 0 ? "user" : "assistant";
+      if (msg?.role !== expectedRole || typeof msg.content !== "string") {
+        return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
+      }
+    }
+
+    const lastMsg: MessageParam = body.messages[body.messages.length - 1];
+    if (!lastMsg.content.trim()) {
+      return Response.json({ error: "プロンプトを入力してください" }, { status: 400 });
+    }
+    if (lastMsg.content.length > MAX_PROMPT_LENGTH) {
+      return Response.json({ error: `プロンプトは${MAX_PROMPT_LENGTH}文字以内にしてください` }, { status: 400 });
+    }
+
+    messages = body.messages as MessageParam[];
+    isFollowUp = messages.length > 1;
   } catch (err) {
     if (!(err instanceof SyntaxError)) {
       console.error("リクエストパースで予期しないエラー:", err);
     }
     return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
-  }
-
-  if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
-    return Response.json({ error: "プロンプトを入力してください" }, { status: 400 });
-  }
-  if (prompt.length > MAX_PROMPT_LENGTH) {
-    return Response.json({ error: `プロンプトは${MAX_PROMPT_LENGTH}文字以内にしてください` }, { status: 400 });
   }
 
   if (!client) {
@@ -65,8 +90,8 @@ export async function POST(request: Request) {
           {
             model: MODEL_NAME,
             max_tokens: 8192,
-            system: buildSystemPrompt(style, taste),
-            messages: [{ role: "user", content: prompt }],
+            system: buildSystemPrompt(style, taste, isFollowUp),
+            messages,
           },
           { signal }
         );

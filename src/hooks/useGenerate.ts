@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { GenerationState, AppStyle, AppTaste } from "@/types";
+import { GenerationState, AppStyle, AppTaste, ConversationTurn, MAX_HISTORY_TURNS } from "@/types";
 import { extractHtml, isHtmlComplete } from "@/lib/htmlExtractor";
 
 const initialState: GenerationState = {
@@ -15,6 +15,7 @@ const initialState: GenerationState = {
 
 export function useGenerate() {
   const [state, setState] = useState<GenerationState>(initialState);
+  const [history, setHistory] = useState<ConversationTurn[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const generate = useCallback(async (prompt: string, style: AppStyle, taste: AppTaste) => {
@@ -29,16 +30,28 @@ export function useGenerate() {
     // このコントローラが現在のリクエストかどうかを確認するガード
     const isCurrentRequest = () => abortControllerRef.current === controller;
 
+    // history からマルチターンの messages 配列を構築する
+    const messages: { role: "user" | "assistant"; content: string }[] = [
+      ...history.flatMap((turn) => [
+        { role: "user" as const, content: turn.prompt },
+        { role: "assistant" as const, content: `\`\`\`html\n${turn.html}\n\`\`\`` },
+      ]),
+      { role: "user" as const, content: prompt },
+    ];
+
     setState({
       ...initialState,
       status: "generating",
     });
 
+    // SSE完了後にhistoryへ追記するため、ローカルでraw文字列を累積する
+    let rawAccumulated = "";
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, style, taste }),
+        body: JSON.stringify({ messages, style, taste }),
         signal: controller.signal,
       });
 
@@ -95,6 +108,7 @@ export function useGenerate() {
 
           if (typeof parsed.text === "string") {
             const text = parsed.text;
+            rawAccumulated += text;
             setState((prev) => {
               const newRaw = prev.rawStream + text;
               const shouldExtract = prev.extractedHtml === "" && isHtmlComplete(newRaw);
@@ -113,11 +127,19 @@ export function useGenerate() {
 
       // ストリーム完了後にもHTML抽出を試みる（念のため）
       if (isCurrentRequest()) {
+        const finalHtml = extractHtml(rawAccumulated) ?? "";
         setState((prev) => {
           const extracted =
-            prev.extractedHtml !== "" ? prev.extractedHtml : (extractHtml(prev.rawStream) ?? "");
+            prev.extractedHtml !== "" ? prev.extractedHtml : finalHtml;
           return { ...prev, status: "done", extractedHtml: extracted };
         });
+        // 生成に成功したターンを履歴に追記する（MAX_HISTORY_TURNS を超えた分は先頭から捨てる）
+        if (finalHtml) {
+          setHistory((prev) => [
+            ...prev.slice(-(MAX_HISTORY_TURNS - 1)),
+            { prompt, html: finalHtml },
+          ]);
+        }
       }
     } catch (err) {
       // 後続リクエストがすでに開始している場合は状態を上書きしない
@@ -134,12 +156,13 @@ export function useGenerate() {
     } finally {
       clearTimeout(timeoutId);
     }
-  }, []);
+  }, [history]);
 
   const reset = useCallback(() => {
     abortControllerRef.current?.abort();
     setState(initialState);
+    setHistory([]);
   }, []);
 
-  return { state, generate, reset };
+  return { state, history, generate, reset };
 }

@@ -26,8 +26,8 @@ const TASTE_INSTRUCTIONS: Record<AppTaste, string> = {
     "Minimal personality: maximum whitespace, simple sans-serif typography at consistent sizes, avoid decorative elements, only absolutely essential UI components, very subtle hover states (opacity or color shift only). Clean and understated feel.",
 };
 
-export function buildSystemPrompt(style: AppStyle, taste: AppTaste): string {
-  return `You are an expert frontend developer. Generate a complete, self-contained HTML application based on the user's request.
+export function buildSystemPrompt(style: AppStyle, taste: AppTaste, isFollowUp = false): string {
+  const base = `You are an expert frontend developer. Generate a complete, self-contained HTML application based on the user's request.
 
 RULES:
 1. Output ONLY a single HTML file wrapped in \`\`\`html ... \`\`\` code blocks. No explanations, no commentary before or after.
@@ -42,4 +42,9 @@ RULES:
 10. The HTML must start with <!DOCTYPE html> and include a complete <head> and <body>.
 
 IMPORTANT: Your entire response must be a single \`\`\`html code block. Nothing else before or after it.`;
+
+  if (isFollowUp) {
+    return base + `\n11. You are modifying the existing HTML application shown in the conversation. Output the COMPLETE updated HTML file — never partial snippets. Preserve all existing functionality unless the user explicitly asks to change it.`;
+  }
+  return base;
 }

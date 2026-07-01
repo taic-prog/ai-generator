@@ -56,3 +56,10 @@ export const MAX_PROMPT_LENGTH = 500;
 export const MODEL_NAME = "claude-sonnet-4-20250514";
 // AT が polite アナウンスを処理し終えるまでモーダルを閉じない待機時間（ms）
 export const ARIA_CLOSE_DELAY_MS = 200;
+// フォローアップ編集で保持する最大ターン数（超えると古いものから切り捨て）
+export const MAX_HISTORY_TURNS = 5;
+
+export interface ConversationTurn {
+  prompt: string;
+  html: string;
+}

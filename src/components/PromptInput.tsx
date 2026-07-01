@@ -8,9 +8,12 @@ interface PromptInputProps {
   onChange: (value: string) => void;
   onSubmit: () => void;
   isGenerating: boolean;
+  isFollowUp?: boolean;
 }
 
-export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit, isGenerating }: PromptInputProps) {
+export const PromptInput = memo(function PromptInput({
+  value, onChange, onSubmit, isGenerating, isFollowUp = false,
+}: PromptInputProps) {
   const remaining = MAX_PROMPT_LENGTH - value.length;
   const isOverLimit = remaining < 0;
   const isNearLimit = remaining >= 0 && remaining < 50;
@@ -25,30 +28,32 @@ export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit
 
   return (
     <div className="flex flex-col gap-3">
-      {/* クイック例チップ */}
-      <div className="flex flex-wrap gap-2">
-        {QUICK_CHIPS.map((chip) => (
-          <button
-            key={chip.label}
-            onClick={() => onChange(chip.prompt)}
-            disabled={isGenerating}
-            className="px-3 py-1 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)", borderWidth: "1px", borderStyle: "solid", borderColor: "var(--color-bg-hover)" }}
-            onMouseEnter={(e) => {
-              if (!isGenerating) {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-bg-hover)";
-                (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-border)";
-              (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
-            }}
-          >
-            {chip.label}
-          </button>
-        ))}
-      </div>
+      {/* クイック例チップ - フォローアップ時は非表示 */}
+      {!isFollowUp && (
+        <div className="flex flex-wrap gap-2">
+          {QUICK_CHIPS.map((chip) => (
+            <button
+              key={chip.label}
+              onClick={() => onChange(chip.prompt)}
+              disabled={isGenerating}
+              className="px-3 py-1 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)", borderWidth: "1px", borderStyle: "solid", borderColor: "var(--color-bg-hover)" }}
+              onMouseEnter={(e) => {
+                if (!isGenerating) {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-bg-hover)";
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-border)";
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* テキストエリア */}
       <div className="relative">
@@ -57,8 +62,12 @@ export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isGenerating}
-          placeholder="作りたいアプリを自然言語で説明してください..."
-          aria-label="プロンプト入力"
+          placeholder={
+            isFollowUp
+              ? "変更点を入力してください（例：ボタンを赤にして、ダークモードを追加して）"
+              : "作りたいアプリを自然言語で説明してください..."
+          }
+          aria-label={isFollowUp ? "変更指示入力" : "プロンプト入力"}
           aria-describedby="char-count"
           rows={5}
           className="w-full resize-none rounded-lg px-4 py-3 text-sm font-mono outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -82,7 +91,7 @@ export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit
         </span>
       </div>
 
-      {/* 生成ボタン */}
+      {/* 生成/更新ボタン */}
       <button
         onClick={onSubmit}
         disabled={!canSubmit}
@@ -102,7 +111,11 @@ export const PromptInput = memo(function PromptInput({ value, onChange, onSubmit
             生成中...
           </span>
         ) : (
-          <span>生成する <span className="opacity-60 text-xs">(Cmd/Ctrl+Enter)</span></span>
+          <span>
+            {isFollowUp ? "更新する" : "生成する"}
+            {" "}
+            <span className="opacity-60 text-xs">(Cmd/Ctrl+Enter)</span>
+          </span>
         )}
       </button>
     </div>
