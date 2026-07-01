@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { AGENT_TEMPLATES } from "@/lib/agentTemplates";
-
-// polite アナウンスが AT に処理されてからモーダルを閉じるための待機時間
-const ARIA_CLOSE_DELAY_MS = 200;
+import { ARIA_CLOSE_DELAY_MS } from "@/types";
 
 interface AgentTemplateModalProps {
   onClose: () => void;
@@ -21,6 +19,9 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   const errorRef = useRef<HTMLParagraphElement>(null);
   const onCloseRef = useRef(onClose);
   const isDownloadingRef = useRef(false);
+  // ダウンロード完了後の200ms待機フェーズを「ダウンロード中」と区別するフラグ
+  const isSucceededRef = useRef(false);
+  const isMountedRef = useRef(true);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -32,8 +33,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   const titleId = useId();
   const descId = useId();
 
-  // 繰り返し押下時も AT が毎回アナウンスできるよう "" → msg の2段階更新を行うヘルパー。
-  // 前の rAF をキャンセルして蓄積を防ぐ。
+  // "" → rAF → msg の2段階更新で毎回 AT がアナウンスできる。前回分をキャンセルして蓄積防止
   const announce = useCallback((msg: string) => {
     setA11yAnnounce("");
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -43,14 +43,8 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     });
   }, []);
 
-  // onClose 呼び出しを統一するヘルパー。3箇所の try-catch を集約し失敗時はユーザーに通知する
-  const safeClose = useCallback(() => {
-    try {
-      onCloseRef.current();
-    } catch (err) {
-      console.error("[AgentTemplateModal] onClose threw", err);
-      setError("モーダルを閉じることができませんでした。");
-    }
+  const close = useCallback(() => {
+    onCloseRef.current();
   }, []);
 
   // ダウンロード失敗時にエラー段落へフォーカスを移動し AT が即読み上げできるようにする
@@ -58,9 +52,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
     if (error) errorRef.current?.focus();
   }, [error]);
 
-  // ダウンロード開始時にパネルへフォーカスを戻す。
-  // Cancel が disabled になった瞬間ブラウザが body へフォーカスを飛ばすのを修正する。
-  // ペイント前に移動するため useLayoutEffect を使用（useEffect だと body に AT がフォーカスを読む1フレームが生じる）
+  // Cancel disabled 時ブラウザが body に飛ばすフォーカスをペイント前にパネルへ戻す（useLayoutEffect 必須）
   useLayoutEffect(() => {
     if (isDownloading) panelRef.current?.focus();
   }, [isDownloading]);
@@ -68,6 +60,7 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
   // アンマウント時に未発火のタイマー・rAF をキャンセルする
   useEffect(() => {
     return () => {
+      isMountedRef.current = false;
       if (closeTimerRef.current !== null) clearTimeout(closeTimerRef.current);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
@@ -80,11 +73,20 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (isDownloadingRef.current) {
+        if (isDownloadingRef.current && !isSucceededRef.current) {
           announce("ダウンロード中のため閉じられません");
           return;
         }
-        safeClose();
+        if (closeTimerRef.current !== null) {
+          clearTimeout(closeTimerRef.current);
+          closeTimerRef.current = null;
+        }
+        if (isSucceededRef.current) {
+          isSucceededRef.current = false;
+          isDownloadingRef.current = false;
+          setIsDownloading(false);
+        }
+        close();
         return;
       }
       if (e.key === "Tab" && panelRef.current) {
@@ -107,11 +109,13 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
           first.focus();
           return;
         }
-        if (e.shiftKey && (active === first || active === panelRef.current)) {
+        // tabindex=-1 要素（errorRef 等）はセレクタに含まれないため、パネル内でも isInFocusableSet=false になる
+        const isInFocusableSet = Array.from(focusable).includes(active as HTMLElement);
+        if (e.shiftKey && (active === first || !isInFocusableSet)) {
           e.preventDefault();
           last.focus();
-        } else if (!e.shiftKey && (active === last || active === panelRef.current)) {
-          // panelRef にフォーカスがある場合も明示的に first へ移動しブラウザ依存を排除
+        } else if (!e.shiftKey && (active === last || !isInFocusableSet)) {
+          // panelRef や errorRef にフォーカスがある場合も first へ移動しブラウザ依存を排除
           e.preventDefault();
           first.focus();
         }
@@ -124,12 +128,11 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
       // isConnected で切り離し済み要素への focus() を防ぐ
       if (prevFocus?.isConnected) prevFocus.focus();
     };
-  }, [announce, safeClose]);
+  }, [announce, close]);
 
   function toggle(id: string) {
-    // AT 仮想カーソル（NVDA Browse Mode 等）はネイティブ focus と独立して動くため、
-    // document.activeElement 判定では検出できない。error がある場合は常にパネルへ戻す
-    if (error) {
+    // AT 仮想カーソル（NVDA Browse Mode 等）はネイティブ focus と独立して動くため focus が panel 外に出る
+    if (error && !panelRef.current?.contains(document.activeElement)) {
       panelRef.current?.focus();
     }
     setError(null);
@@ -138,11 +141,20 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
 
   // backdrop・キャンセルボタン共通: ダウンロード中はブロックして AT へ告知する
   function handleDismiss() {
-    if (isDownloadingRef.current) {
+    if (isDownloadingRef.current && !isSucceededRef.current) {
       announce("ダウンロード中のため閉じられません");
       return;
     }
-    safeClose();
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    if (isSucceededRef.current) {
+      isSucceededRef.current = false;
+      isDownloadingRef.current = false;
+      setIsDownloading(false);
+    }
+    close();
   }
 
   async function handleConfirm() {
@@ -159,27 +171,27 @@ export function AgentTemplateModal({ onClose, onConfirm }: AgentTemplateModalPro
       console.error("[AgentTemplateModal] download failed", err);
       setError("ダウンロードに失敗しました。もう一度お試しください。");
     } finally {
-      // 失敗・例外パスのみここでリセット。成功パスは 200ms timer 内で isDownloadingRef と isDownloading を
-      // 同時にリセットし、ボタンの有効化タイミングと ref ガード解除を一致させる（F1 desync 修正）
+      // 失敗パスのみここでリセット。成功パスは isSucceededRef + 200ms timer でリセットする
       if (!succeeded) {
         isDownloadingRef.current = false;
         setIsDownloading(false);
-      }
-      // 進行中の rAF をキャンセルしてから announce 状態をクリアする
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
+        if (rafRef.current !== null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
       }
       setA11yAnnounce("");
     }
     if (succeeded) {
-      // 成功メッセージを直接セット（finally の "" と React 18 バッチングで単一レンダー）
-      setA11yAnnounce("ダウンロードが完了しました");
+      isSucceededRef.current = true;
+      announce("ダウンロードが完了しました");
       closeTimerRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        isSucceededRef.current = false;
         isDownloadingRef.current = false;
         setIsDownloading(false);
         closeTimerRef.current = null;
-        safeClose();
+        close();
       }, ARIA_CLOSE_DELAY_MS);
     }
   }
