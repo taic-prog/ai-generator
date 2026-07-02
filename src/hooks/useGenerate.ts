@@ -18,7 +18,7 @@ export function useGenerate() {
   const [history, setHistory] = useState<ConversationTurn[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const generate = useCallback(async (prompt: string, style: AppStyle, taste: AppTaste) => {
+  const generate = useCallback(async (prompt: string, style: AppStyle, taste: AppTaste): Promise<boolean> => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -34,7 +34,8 @@ export function useGenerate() {
     const messages: { role: "user" | "assistant"; content: string }[] = [
       ...history.flatMap((turn) => [
         { role: "user" as const, content: turn.prompt },
-        { role: "assistant" as const, content: `\`\`\`html\n${turn.html}\n\`\`\`` },
+        // ``` を含む HTML がコードフェンスの区切りと衝突しないようにエスケープする
+        { role: "assistant" as const, content: `\`\`\`html\n${turn.html.replace(/`{3}/g, "``​`")}\n\`\`\`` },
       ]),
       { role: "user" as const, content: prompt },
     ];
@@ -46,6 +47,9 @@ export function useGenerate() {
 
     // SSE完了後にhistoryへ追記するため、ローカルでraw文字列を累積する
     let rawAccumulated = "";
+    // ストリーム途中で抽出したHTMLを保持する（post-stream抽出が失敗した場合のフォールバック）
+    let localExtractedHtml = "";
+    let success = false;
 
     try {
       const response = await fetch("/api/generate", {
@@ -109,6 +113,10 @@ export function useGenerate() {
           if (typeof parsed.text === "string") {
             const text = parsed.text;
             rawAccumulated += text;
+            // setState の外で追跡することで、post-stream 抽出が失敗した際のフォールバックに使う
+            if (!localExtractedHtml && isHtmlComplete(rawAccumulated)) {
+              localExtractedHtml = extractHtml(rawAccumulated) ?? "";
+            }
             setState((prev) => {
               const newRaw = prev.rawStream + text;
               const shouldExtract = prev.extractedHtml === "" && isHtmlComplete(newRaw);
@@ -125,25 +133,27 @@ export function useGenerate() {
         if (done) break;
       }
 
-      // ストリーム完了後にもHTML抽出を試みる（念のため）
+      // ストリーム完了後にHTML抽出を試みる。失敗時はミッドストリームで抽出した値をフォールバックに使う
       if (isCurrentRequest()) {
-        const finalHtml = extractHtml(rawAccumulated) ?? "";
+        const finalHtml = extractHtml(rawAccumulated) || localExtractedHtml;
         setState((prev) => {
-          const extracted =
-            prev.extractedHtml !== "" ? prev.extractedHtml : finalHtml;
+          // finalHtmlがあれば最新の完全なHTMLで更新し、プレビューとhtmlExtractorの乖離を解消する
+          const extracted = finalHtml || prev.extractedHtml;
           return { ...prev, status: "done", extractedHtml: extracted };
         });
         // 生成に成功したターンを履歴に追記する（MAX_HISTORY_TURNS を超えた分は先頭から捨てる）
         if (finalHtml) {
+          const keep = MAX_HISTORY_TURNS - 1;
           setHistory((prev) => [
-            ...prev.slice(-(MAX_HISTORY_TURNS - 1)),
+            ...(keep > 0 ? prev.slice(-keep) : []),
             { prompt, html: finalHtml },
           ]);
+          success = true;
         }
       }
     } catch (err) {
       // 後続リクエストがすでに開始している場合は状態を上書きしない
-      if (!isCurrentRequest()) return;
+      if (!isCurrentRequest()) return false;
       if ((err as Error).name === "AbortError") {
         setState((prev) => ({ ...prev, status: "error", error: "タイムアウトまたはキャンセルされました" }));
       } else {
@@ -156,10 +166,13 @@ export function useGenerate() {
     } finally {
       clearTimeout(timeoutId);
     }
+    return success;
   }, [history]);
 
   const reset = useCallback(() => {
     abortControllerRef.current?.abort();
+    // null にしないと catch 内の isCurrentRequest() が true を返し initialState を上書きする
+    abortControllerRef.current = null;
     setState(initialState);
     setHistory([]);
   }, []);

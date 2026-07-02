@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt } from "@/lib/systemPrompt";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
-import { MODEL_NAME, MAX_PROMPT_LENGTH, MAX_HISTORY_TURNS, AppStyle, APP_STYLES, AppTaste, APP_TASTES } from "@/types";
+import { MODEL_NAME, MAX_PROMPT_LENGTH, MAX_HISTORY_TURNS, MAX_HISTORY_CONTENT_LENGTH, AppStyle, APP_STYLES, AppTaste, APP_TASTES, MessageParam } from "@/types";
 
 export const runtime = "nodejs";
 
@@ -10,8 +10,6 @@ export const runtime = "nodejs";
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
 const VALID_STYLE_IDS = new Set<string>(APP_STYLES.map((s) => s.id));
 const VALID_TASTE_IDS = new Set<string>(APP_TASTES.map((t) => t.id));
-
-type MessageParam = { role: "user" | "assistant"; content: string };
 
 export async function POST(request: Request) {
   const headersList = await headers();
@@ -49,11 +47,24 @@ export async function POST(request: Request) {
       return Response.json({ error: "会話履歴が長すぎます" }, { status: 400 });
     }
 
-    // ロール交互バリデーション（user/assistant/.../user で終わること）
+    // 最後のメッセージが必ず user ロールになること（偶数長は assistant 終わりになる）
+    if (body.messages.length % 2 === 0) {
+      return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
+    }
+
+    // ロール交互バリデーション（user/assistant/.../user）と各コンテンツの検証
     for (let i = 0; i < body.messages.length; i++) {
       const msg = body.messages[i];
       const expectedRole = i % 2 === 0 ? "user" : "assistant";
       if (msg?.role !== expectedRole || typeof msg.content !== "string") {
+        return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
+      }
+      // 中間メッセージも長さを制限してトークン爆発を防ぐ
+      if (msg.content.length > MAX_HISTORY_CONTENT_LENGTH) {
+        return Response.json({ error: "会話履歴が長すぎます" }, { status: 400 });
+      }
+      // assistant ターンはコードフェンス付き HTML のみ受け付ける（プロンプトインジェクション対策）
+      if (msg.role === "assistant" && !msg.content.startsWith("```html")) {
         return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
       }
     }

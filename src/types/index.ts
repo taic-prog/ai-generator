@@ -58,8 +58,13 @@ export const MODEL_NAME = "claude-sonnet-4-20250514";
 export const ARIA_CLOSE_DELAY_MS = 200;
 // フォローアップ編集で保持する最大ターン数（超えると古いものから切り捨て）
 export const MAX_HISTORY_TURNS = 5;
+// 会話履歴の中間メッセージ1件あたりの最大文字長（生成HTML想定）
+export const MAX_HISTORY_CONTENT_LENGTH = 30000;
 
 export interface ConversationTurn {
   prompt: string;
   html: string;
 }
+
+// クライアント→APIへ送るメッセージ1件の型
+export type MessageParam = { role: "user" | "assistant"; content: string };

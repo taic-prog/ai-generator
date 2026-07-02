@@ -36,10 +36,11 @@ export default function Home() {
   const isGenerating = state.status === "generating";
   const isFollowUp = history.length > 0;
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (prompt.trim() === "" || isGenerating) return;
-    generate(prompt, style, taste);
-    setPrompt("");
+    const succeeded = await generate(prompt, style, taste);
+    // 生成に成功した場合のみプロンプトをクリアする（失敗時は再入力できるよう保持）
+    if (succeeded) setPrompt("");
   }, [prompt, isGenerating, style, taste, generate]);
 
   const handleReset = useCallback(() => {
