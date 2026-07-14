@@ -59,12 +59,12 @@ export async function POST(request: Request) {
       if (msg?.role !== expectedRole || typeof msg.content !== "string") {
         return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
       }
-      // 中間メッセージも長さを制限してトークン爆発を防ぐ
-      if (msg.content.length > MAX_HISTORY_CONTENT_LENGTH) {
+      // 最後のユーザーメッセージは post-loop の MAX_PROMPT_LENGTH で検証するため除外する
+      if (i < body.messages.length - 1 && msg.content.length > MAX_HISTORY_CONTENT_LENGTH) {
         return Response.json({ error: "会話履歴が長すぎます" }, { status: 400 });
       }
-      // assistant ターンはコードフェンス付き HTML のみ受け付ける（プロンプトインジェクション対策）
-      if (msg.role === "assistant" && !msg.content.startsWith("```html")) {
+      // "```html\n" で改行必須とし、"```htmlINJECTION" 形式のインジェクションを防ぐ
+      if (msg.role === "assistant" && !msg.content.startsWith("```html\n")) {
         return Response.json({ error: "リクエスト形式が不正です" }, { status: 400 });
       }
     }
@@ -77,7 +77,10 @@ export async function POST(request: Request) {
       return Response.json({ error: `プロンプトは${MAX_PROMPT_LENGTH}文字以内にしてください` }, { status: 400 });
     }
 
-    messages = body.messages as MessageParam[];
+    // as キャストはコンパイル時のみ有効なため、実行時に余分なフィールドを除去する
+    messages = (body.messages as Array<{ role: "user" | "assistant"; content: string }>).map(
+      ({ role, content }) => ({ role, content })
+    );
     isFollowUp = messages.length > 1;
   } catch (err) {
     if (!(err instanceof SyntaxError)) {

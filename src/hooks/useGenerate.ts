@@ -34,8 +34,8 @@ export function useGenerate() {
     const messages: { role: "user" | "assistant"; content: string }[] = [
       ...history.flatMap((turn) => [
         { role: "user" as const, content: turn.prompt },
-        // ``` を含む HTML がコードフェンスの区切りと衝突しないようにエスケープする
-        { role: "assistant" as const, content: `\`\`\`html\n${turn.html.replace(/`{3}/g, "``​`")}\n\`\`\`` },
+        // U+200B を挿入して ``` をコードフェンス区切りとして誤認識させない
+        { role: "assistant" as const, content: `\`\`\`html\n${turn.html.replace(/`{3}/g, "``\u200B`")}\n\`\`\`` },
       ]),
       { role: "user" as const, content: prompt },
     ];
@@ -45,10 +45,10 @@ export function useGenerate() {
       status: "generating",
     });
 
-    // SSE完了後にhistoryへ追記するため、ローカルでraw文字列を累積する
     let rawAccumulated = "";
-    // ストリーム途中で抽出したHTMLを保持する（post-stream抽出が失敗した場合のフォールバック）
     let localExtractedHtml = "";
+    // "" は falsy なので別フラグで「試行済み」を管理する（extractHtml が null を返した場合も再試行を防ぐ）
+    let htmlExtractionDone = false;
     let success = false;
 
     try {
@@ -98,7 +98,7 @@ export function useGenerate() {
           }
 
           if (parsed.type === "error") {
-            throw new Error(parsed.message as string);
+            throw new Error(typeof parsed.message === "string" ? parsed.message : "不明なエラーが発生しました");
           }
 
           if (parsed.type === "usage") {
@@ -113,11 +113,13 @@ export function useGenerate() {
           if (typeof parsed.text === "string") {
             const text = parsed.text;
             rawAccumulated += text;
-            // setState の外で追跡することで、post-stream 抽出が失敗した際のフォールバックに使う
-            if (!localExtractedHtml && isHtmlComplete(rawAccumulated)) {
+            if (!htmlExtractionDone && isHtmlComplete(rawAccumulated)) {
+              htmlExtractionDone = true;
               localExtractedHtml = extractHtml(rawAccumulated) ?? "";
             }
             setState((prev) => {
+              // リセット後にキューイングされた更新が適用されないようにガードする
+              if (!isCurrentRequest()) return prev;
               const newRaw = prev.rawStream + text;
               const shouldExtract = prev.extractedHtml === "" && isHtmlComplete(newRaw);
               const extracted = shouldExtract ? (extractHtml(newRaw) ?? "") : prev.extractedHtml;
@@ -133,22 +135,29 @@ export function useGenerate() {
         if (done) break;
       }
 
-      // ストリーム完了後にHTML抽出を試みる。失敗時はミッドストリームで抽出した値をフォールバックに使う
       if (isCurrentRequest()) {
-        const finalHtml = extractHtml(rawAccumulated) || localExtractedHtml;
-        setState((prev) => {
-          // finalHtmlがあれば最新の完全なHTMLで更新し、プレビューとhtmlExtractorの乖離を解消する
-          const extracted = finalHtml || prev.extractedHtml;
-          return { ...prev, status: "done", extractedHtml: extracted };
-        });
-        // 生成に成功したターンを履歴に追記する（MAX_HISTORY_TURNS を超えた分は先頭から捨てる）
-        if (finalHtml) {
+        const postStreamHtml = extractHtml(rawAccumulated) || localExtractedHtml;
+        if (postStreamHtml) {
+          setState((prev) => {
+            // mid-streamで既に抽出済みのHTMLを優先し、post-streamの貪欲マッチによる上書きを防ぐ
+            const extracted = prev.extractedHtml !== "" ? prev.extractedHtml : postStreamHtml;
+            return { ...prev, status: "done", extractedHtml: extracted };
+          });
+          // historyにはmid-stream抽出結果を優先して保存する（貪欲マッチの汚染を避けるため）
+          const historyHtml = localExtractedHtml || postStreamHtml;
           const keep = MAX_HISTORY_TURNS - 1;
           setHistory((prev) => [
             ...(keep > 0 ? prev.slice(-keep) : []),
-            { prompt, html: finalHtml },
+            { prompt, html: historyHtml },
           ]);
           success = true;
+        } else {
+          // HTMLが抽出できなかった場合はエラーとして扱う
+          setState((prev) => ({
+            ...prev,
+            status: "error",
+            error: "HTMLの生成に失敗しました。プロンプトを変更してもう一度お試しください。",
+          }));
         }
       }
     } catch (err) {
