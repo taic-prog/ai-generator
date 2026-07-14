@@ -8,10 +8,10 @@ interface StatusBarProps {
 }
 
 const STATUS_CONFIG: Record<GenerationStatus, { color: string; label: string; pulse: boolean }> = {
-  ready:      { color: "var(--color-text-secondary)", label: "Ready",      pulse: false },
-  generating: { color: "var(--color-accent)",         label: "Generating", pulse: true  },
-  done:       { color: "var(--color-success)",        label: "Done",       pulse: false },
-  error:      { color: "var(--color-error)",          label: "Error",      pulse: false },
+  ready:      { color: "var(--color-text-secondary)", label: "待機中", pulse: false },
+  generating: { color: "var(--color-accent)",         label: "生成中", pulse: true  },
+  done:       { color: "var(--color-success)",        label: "完了",   pulse: false },
+  error:      { color: "var(--color-error)",          label: "エラー", pulse: false },
 };
 
 export const StatusBar = memo(function StatusBar({ status, inputTokens, outputTokens }: StatusBarProps) {

@@ -11,9 +11,10 @@ interface PreviewPaneProps {
   html: string;
   rawStream: string;
   status: GenerationStatus;
+  error?: string | null;
 }
 
-export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
+export function PreviewPane({ html, rawStream, status, error }: PreviewPaneProps) {
   const [iframeKey, setIframeKey] = useState(0);
   const [showCode, setShowCode] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -53,11 +54,11 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
           <ToolbarButton onClick={handleReload} disabled={!hasContent}>
             リロード
           </ToolbarButton>
-          <ToolbarButton onClick={handleDownload} disabled={!hasContent}>
-            ダウンロード
+          <ToolbarButton onClick={handleDownload} disabled={!hasContent} title="生成されたHTMLファイルをダウンロード">
+            HTML保存
           </ToolbarButton>
-          <ToolbarButton onClick={handleDownloadTemplates} disabled={!hasContent}>
-            テンプレート
+          <ToolbarButton onClick={handleDownloadTemplates} disabled={!hasContent} title="Claude Code用エージェントテンプレートをZIPでダウンロード">
+            Claude Code ZIP
           </ToolbarButton>
         </div>
       </div>
@@ -73,10 +74,10 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
             sandbox="allow-scripts"
             title="生成されたアプリのプレビュー"
             className="w-full h-full"
-            style={{ border: "none", backgroundColor: "#fff" }}
+            style={{ border: "none", backgroundColor: "var(--color-bg-main)" }}
           />
         ) : (
-          <Placeholder status={status} />
+          <Placeholder status={status} error={error} />
         )}
       </div>
 
@@ -90,16 +91,19 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
 function ToolbarButton({
   onClick,
   disabled,
+  title,
   children,
 }: {
   onClick: () => void;
   disabled?: boolean;
+  title?: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className="text-xs font-mono px-2.5 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)" }}
       onMouseEnter={(e) => {
@@ -118,7 +122,7 @@ function ToolbarButton({
   );
 }
 
-function Placeholder({ status }: { status: GenerationStatus }) {
+function Placeholder({ status, error }: { status: GenerationStatus; error?: string | null }) {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-3"
       style={{ color: "var(--color-text-secondary)" }}>
@@ -129,7 +133,9 @@ function Placeholder({ status }: { status: GenerationStatus }) {
           <span className="text-sm font-mono" style={{ color: "var(--color-text-secondary)" }}>生成中...</span>
         </>
       ) : status === "error" ? (
-        <span className="text-sm font-mono" style={{ color: "var(--color-error)" }}>エラーが発生しました</span>
+        <span className="text-sm font-mono text-center px-4" style={{ color: "var(--color-error)" }}>
+          {error ?? "エラーが発生しました"}
+        </span>
       ) : (
         <>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">

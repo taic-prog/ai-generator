@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useCallback, useId, useState } from "react";
+import React, { useCallback, useId, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
 import { StatusBar } from "@/components/StatusBar";
 import { useGenerate } from "@/hooks/useGenerate";
-import { AppStyle, APP_STYLES, AppTaste, APP_TASTES } from "@/types";
+import { AppStyle, APP_STYLES, AppTaste, APP_TASTES, MAX_HISTORY_TURNS } from "@/types";
 
 // APG radiogroup パターン: roving tabindex + 矢印キーで選択移動。Enter 抑止は各ボタン側で行う
 function makeRadioKeyDown<T extends string>(setter: (val: T) => void) {
@@ -32,6 +32,7 @@ export default function Home() {
   const [taste, setTaste] = useState<AppTaste>("cool");
   const styleId = useId();
   const tasteId = useId();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { state, history, generate, reset } = useGenerate();
   const isGenerating = state.status === "generating";
   const isFollowUp = history.length > 0;
@@ -39,9 +40,15 @@ export default function Home() {
   const handleSubmit = useCallback(async () => {
     if (prompt.trim() === "" || isGenerating) return;
     const succeeded = await generate(prompt, style, taste);
-    // 生成に成功した場合のみプロンプトをクリアする（失敗時は再入力できるよう保持）
-    if (succeeded) setPrompt("");
+    if (succeeded) {
+      setPrompt("");
+      textareaRef.current?.focus();
+    }
   }, [prompt, isGenerating, style, taste, generate]);
+
+  const handleCancel = useCallback(() => {
+    reset();
+  }, [reset]);
 
   const handleReset = useCallback(() => {
     reset();
@@ -65,15 +72,14 @@ export default function Home() {
               </h2>
               <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
                 {isFollowUp
-                  ? `${history.length}回目の編集 — 変更点を入力してください`
+                  ? `${history.length}回目の編集 — 残り${MAX_HISTORY_TURNS - history.length}回`
                   : "作りたいアプリを日本語または英語で説明してください"}
               </p>
             </div>
-            {isFollowUp && (
+            {(isFollowUp || isGenerating) && (
               <button
-                onClick={handleReset}
-                disabled={isGenerating}
-                className="shrink-0 text-xs font-mono px-2.5 py-1 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={isGenerating ? handleCancel : handleReset}
+                className="shrink-0 text-xs font-mono px-2.5 py-1 rounded transition-colors"
                 style={{
                   borderWidth: "1px",
                   borderStyle: "solid",
@@ -81,19 +87,19 @@ export default function Home() {
                   color: "var(--color-text-secondary)",
                 }}
                 onMouseEnter={(e) => {
-                  if (!isGenerating) (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
                 }}
               >
-                最初から
+                {isGenerating ? "キャンセル" : "最初から"}
               </button>
             )}
           </div>
 
-          {/* スタイル選択 */}
-          <div className="flex flex-col gap-2">
+          {/* スタイル選択 - フォローアップ時は非表示 */}
+          {!isFollowUp && <div className="flex flex-col gap-2">
             <p id={styleId} className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>スタイル</p>
             <div
               role="radiogroup"
@@ -130,10 +136,10 @@ export default function Home() {
                 );
               })}
             </div>
-          </div>
+          </div>}
 
-          {/* テイスト選択 */}
-          <div className="flex flex-col gap-2">
+          {/* テイスト選択 - フォローアップ時は非表示 */}
+          {!isFollowUp && <div className="flex flex-col gap-2">
             <p id={tasteId} className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>テイスト</p>
             <div
               role="radiogroup"
@@ -166,9 +172,10 @@ export default function Home() {
                 );
               })}
             </div>
-          </div>
+          </div>}
 
           <PromptInput
+            ref={textareaRef}
             value={prompt}
             onChange={setPrompt}
             onSubmit={handleSubmit}
@@ -193,6 +200,7 @@ export default function Home() {
             html={state.extractedHtml}
             rawStream={state.rawStream}
             status={state.status}
+            error={state.error}
           />
         </div>
       </main>

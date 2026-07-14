@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { memo } from "react";
+import { MODEL_DISPLAY_NAME } from "@/types";
 
 export const Header = memo(function Header() {
   return (
@@ -9,11 +10,11 @@ export const Header = memo(function Header() {
         <span className="text-lg font-bold" style={{ color: "var(--color-accent)" }}>AI App Generator</span>
         <span className="text-xs px-2 py-0.5 rounded-full font-mono"
           style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>
-          claude-sonnet-4
+          {MODEL_DISPLAY_NAME}
         </span>
       </div>
       <Link
-        href="https://github.com"
+        href="https://github.com/taic-prog/ai-generator"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-1.5 text-sm transition-colors min-w-[44px] justify-end"

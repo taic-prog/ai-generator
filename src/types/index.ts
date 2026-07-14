@@ -21,6 +21,13 @@ export const QUICK_CHIPS: QuickChip[] = [
   { label: "BMI計算機", prompt: "身長と体重を入力してBMIを計算するアプリを作ってください" },
 ];
 
+export const FOLLOWUP_CHIPS: QuickChip[] = [
+  { label: "ダークモード", prompt: "ダークモードとライトモードの切り替えボタンを追加してください" },
+  { label: "レスポンシブ", prompt: "スマートフォンでも見やすいようにレスポンシブデザインに対応してください" },
+  { label: "アニメーション", prompt: "ボタンやUIのインタラクションにアニメーションを追加してください" },
+  { label: "色を変更", prompt: "カラーテーマをより鮮やかな配色に変更してください" },
+];
+
 export type AppStyle = "dark" | "light" | "neon" | "pastel" | "classic";
 
 export interface StyleOption {
@@ -54,6 +61,7 @@ export const APP_TASTES: TasteOption[] = [
 
 export const MAX_PROMPT_LENGTH = 500;
 export const MODEL_NAME = "claude-sonnet-4-20250514";
+export const MODEL_DISPLAY_NAME = "claude-sonnet-4";
 // AT が polite アナウンスを処理し終えるまでモーダルを閉じない待機時間（ms）
 export const ARIA_CLOSE_DELAY_MS = 200;
 // フォローアップ編集で保持する最大ターン数（超えると古いものから切り捨て）

@@ -1,7 +1,7 @@
 "use client";
 
-import { KeyboardEvent, memo } from "react";
-import { QUICK_CHIPS, MAX_PROMPT_LENGTH } from "@/types";
+import { forwardRef, KeyboardEvent, memo } from "react";
+import { QUICK_CHIPS, FOLLOWUP_CHIPS, MAX_PROMPT_LENGTH } from "@/types";
 
 interface PromptInputProps {
   value: string;
@@ -11,9 +11,10 @@ interface PromptInputProps {
   isFollowUp?: boolean;
 }
 
-export const PromptInput = memo(function PromptInput({
-  value, onChange, onSubmit, isGenerating, isFollowUp = false,
-}: PromptInputProps) {
+export const PromptInput = memo(forwardRef<HTMLTextAreaElement, PromptInputProps>(function PromptInput(
+  { value, onChange, onSubmit, isGenerating, isFollowUp = false },
+  ref
+) {
   const remaining = MAX_PROMPT_LENGTH - value.length;
   const isOverLimit = remaining < 0;
   const isNearLimit = remaining >= 0 && remaining < 50;
@@ -26,38 +27,39 @@ export const PromptInput = memo(function PromptInput({
     }
   }
 
+  const chips = isFollowUp ? FOLLOWUP_CHIPS : QUICK_CHIPS;
+
   return (
     <div className="flex flex-col gap-3">
-      {/* クイック例チップ - フォローアップ時は非表示 */}
-      {!isFollowUp && (
-        <div className="flex flex-wrap gap-2">
-          {QUICK_CHIPS.map((chip) => (
-            <button
-              key={chip.label}
-              onClick={() => onChange(chip.prompt)}
-              disabled={isGenerating}
-              className="px-3 py-1 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)", borderWidth: "1px", borderStyle: "solid", borderColor: "var(--color-bg-hover)" }}
-              onMouseEnter={(e) => {
-                if (!isGenerating) {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-bg-hover)";
-                  (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-border)";
-                (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
-              }}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* クイック例チップ */}
+      <div className="flex flex-wrap gap-2">
+        {chips.map((chip) => (
+          <button
+            key={chip.label}
+            onClick={() => onChange(chip.prompt)}
+            disabled={isGenerating}
+            className="px-3 py-1 rounded-full text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ backgroundColor: "var(--color-border)", color: "var(--color-text-secondary)", borderWidth: "1px", borderStyle: "solid", borderColor: "var(--color-bg-hover)" }}
+            onMouseEnter={(e) => {
+              if (!isGenerating) {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-bg-hover)";
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-primary)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-border)";
+              (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-secondary)";
+            }}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
 
       {/* テキストエリア */}
       <div className="relative">
         <textarea
+          ref={ref}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -120,4 +122,4 @@ export const PromptInput = memo(function PromptInput({
       </button>
     </div>
   );
-});
+}));
