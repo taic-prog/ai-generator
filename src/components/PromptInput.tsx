@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, KeyboardEvent, memo } from "react";
+import { KeyboardEvent, memo, Ref } from "react";
 import { QUICK_CHIPS, FOLLOWUP_CHIPS, MAX_PROMPT_LENGTH } from "@/types";
 
 interface PromptInputProps {
@@ -9,12 +9,12 @@ interface PromptInputProps {
   onSubmit: () => void;
   isGenerating: boolean;
   isFollowUp?: boolean;
+  ref?: Ref<HTMLTextAreaElement>;
 }
 
-export const PromptInput = memo(forwardRef<HTMLTextAreaElement, PromptInputProps>(function PromptInput(
-  { value, onChange, onSubmit, isGenerating, isFollowUp = false },
-  ref
-) {
+export const PromptInput = memo(function PromptInput({
+  value, onChange, onSubmit, isGenerating, isFollowUp = false, ref,
+}: PromptInputProps) {
   const remaining = MAX_PROMPT_LENGTH - value.length;
   const isOverLimit = remaining < 0;
   const isNearLimit = remaining >= 0 && remaining < 50;
@@ -122,4 +122,4 @@ export const PromptInput = memo(forwardRef<HTMLTextAreaElement, PromptInputProps
       </button>
     </div>
   );
-}));
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useId, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
@@ -33,26 +33,34 @@ export default function Home() {
   const styleId = useId();
   const tasteId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { state, history, generate, reset } = useGenerate();
+  const prevIsGenerating = useRef(false);
+  const { state, history, generate, abort, reset } = useGenerate();
   const isGenerating = state.status === "generating";
   const isFollowUp = history.length > 0;
+
+  // 生成完了後に textarea へフォーカスを当てる（disabled 解除後に行う必要があるため useEffect で実行）
+  useEffect(() => {
+    if (prevIsGenerating.current && !isGenerating && state.status === "done") {
+      textareaRef.current?.focus();
+    }
+    prevIsGenerating.current = isGenerating;
+  }, [isGenerating, state.status]);
 
   const handleSubmit = useCallback(async () => {
     if (prompt.trim() === "" || isGenerating) return;
     const succeeded = await generate(prompt, style, taste);
-    if (succeeded) {
-      setPrompt("");
-      textareaRef.current?.focus();
-    }
+    if (succeeded) setPrompt("");
   }, [prompt, isGenerating, style, taste, generate]);
 
   const handleCancel = useCallback(() => {
-    reset();
-  }, [reset]);
+    abort();
+  }, [abort]);
 
   const handleReset = useCallback(() => {
     reset();
     setPrompt("");
+    setStyle("dark");
+    setTaste("cool");
   }, [reset]);
 
   return (
@@ -72,7 +80,9 @@ export default function Home() {
               </h2>
               <p className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
                 {isFollowUp
-                  ? `${history.length}回目の編集 — 残り${MAX_HISTORY_TURNS - history.length}回`
+                  ? history.length < MAX_HISTORY_TURNS
+                    ? `${history.length}回目の編集 — 残り${MAX_HISTORY_TURNS - history.length}回`
+                    : `${history.length}回目の編集 — 変更点を入力してください`
                   : "作りたいアプリを日本語または英語で説明してください"}
               </p>
             </div>
@@ -105,7 +115,7 @@ export default function Home() {
               role="radiogroup"
               aria-labelledby={styleId}
               className="flex flex-wrap gap-2"
-              onKeyDown={makeRadioKeyDown<AppStyle>(setStyle)}
+              onKeyDown={!isGenerating ? makeRadioKeyDown<AppStyle>(setStyle) : undefined}
             >
               {APP_STYLES.map((s) => {
                 const isSelected = style === s.id;
@@ -145,7 +155,7 @@ export default function Home() {
               role="radiogroup"
               aria-labelledby={tasteId}
               className="flex flex-wrap gap-2"
-              onKeyDown={makeRadioKeyDown<AppTaste>(setTaste)}
+              onKeyDown={!isGenerating ? makeRadioKeyDown<AppTaste>(setTaste) : undefined}
             >
               {APP_TASTES.map((t) => {
                 const isSelected = taste === t.id;
@@ -200,7 +210,6 @@ export default function Home() {
             html={state.extractedHtml}
             rawStream={state.rawStream}
             status={state.status}
-            error={state.error}
           />
         </div>
       </main>

@@ -11,16 +11,17 @@ interface PreviewPaneProps {
   html: string;
   rawStream: string;
   status: GenerationStatus;
-  error?: string | null;
 }
 
-export function PreviewPane({ html, rawStream, status, error }: PreviewPaneProps) {
+export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
   const [iframeKey, setIframeKey] = useState(0);
   const [showCode, setShowCode] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const hasContent = html !== "";
   const codeContent = hasContent ? html : rawStream;
+  // コンテンツがない状態でソースコード表示をオンにしたままリセットしてもトラップされないよう派生値で制御
+  const effectiveShowCode = showCode && (hasContent || rawStream !== "");
 
   function handleReload() {
     setIframeKey((prev) => prev + 1);
@@ -45,11 +46,11 @@ export function PreviewPane({ html, rawStream, status, error }: PreviewPaneProps
         style={{ backgroundColor: "var(--color-bg-surface)", borderColor: "var(--color-border)" }}
       >
         <span className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
-          {showCode ? "ソースコード" : "プレビュー"}
+          {effectiveShowCode ? "ソースコード" : "プレビュー"}
         </span>
         <div className="flex items-center gap-2">
           <ToolbarButton onClick={() => setShowCode((v) => !v)} disabled={!hasContent && rawStream === ""}>
-            {showCode ? "プレビュー" : "ソース表示"}
+            {effectiveShowCode ? "プレビュー" : "ソース表示"}
           </ToolbarButton>
           <ToolbarButton onClick={handleReload} disabled={!hasContent}>
             リロード
@@ -65,7 +66,7 @@ export function PreviewPane({ html, rawStream, status, error }: PreviewPaneProps
 
       {/* コンテンツ */}
       <div className="flex-1 overflow-hidden">
-        {showCode ? (
+        {effectiveShowCode ? (
           <CodeViewer code={codeContent} />
         ) : hasContent ? (
           <iframe
@@ -77,7 +78,7 @@ export function PreviewPane({ html, rawStream, status, error }: PreviewPaneProps
             style={{ border: "none", backgroundColor: "var(--color-bg-main)" }}
           />
         ) : (
-          <Placeholder status={status} error={error} />
+          <Placeholder status={status} />
         )}
       </div>
 
@@ -122,7 +123,7 @@ function ToolbarButton({
   );
 }
 
-function Placeholder({ status, error }: { status: GenerationStatus; error?: string | null }) {
+function Placeholder({ status }: { status: GenerationStatus }) {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-3"
       style={{ color: "var(--color-text-secondary)" }}>
@@ -133,9 +134,7 @@ function Placeholder({ status, error }: { status: GenerationStatus; error?: stri
           <span className="text-sm font-mono" style={{ color: "var(--color-text-secondary)" }}>生成中...</span>
         </>
       ) : status === "error" ? (
-        <span className="text-sm font-mono text-center px-4" style={{ color: "var(--color-error)" }}>
-          {error ?? "エラーが発生しました"}
-        </span>
+        <span className="text-sm font-mono" style={{ color: "var(--color-error)" }}>エラーが発生しました</span>
       ) : (
         <>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">

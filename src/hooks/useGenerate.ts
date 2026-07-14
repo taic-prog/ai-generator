@@ -178,6 +178,13 @@ export function useGenerate() {
     return success;
   }, [history]);
 
+  const abort = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    // 生成中の状態を ready に戻すだけで履歴は保持する
+    setState((prev) => ({ ...prev, status: "ready", error: null }));
+  }, []);
+
   const reset = useCallback(() => {
     abortControllerRef.current?.abort();
     // null にしないと catch 内の isCurrentRequest() が true を返し initialState を上書きする
@@ -186,5 +193,5 @@ export function useGenerate() {
     setHistory([]);
   }, []);
 
-  return { state, history, generate, reset };
+  return { state, history, generate, abort, reset };
 }
