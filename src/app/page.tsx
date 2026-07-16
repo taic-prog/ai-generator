@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Header } from "@/components/Header";
+import { Gallery } from "@/components/Gallery";
 import { PromptInput } from "@/components/PromptInput";
 import { PreviewPane } from "@/components/PreviewPane";
 import { StatusBar } from "@/components/StatusBar";
@@ -209,12 +210,21 @@ export default function Home() {
 
         {/* 右ペイン */}
         <div className="w-full sm:w-1/2 flex flex-col" style={{ minHeight: "400px" }}>
-          <PreviewPane
-            key={previewKey}
-            html={state.extractedHtml}
-            rawStream={state.rawStream}
-            status={state.status}
-          />
+          {state.status === "ready" && !isFollowUp ? (
+            <Gallery
+              onSelect={(p) => {
+                setPrompt(p);
+                textareaRef.current?.focus();
+              }}
+            />
+          ) : (
+            <PreviewPane
+              key={previewKey}
+              html={state.extractedHtml}
+              rawStream={state.rawStream}
+              status={state.status}
+            />
+          )}
         </div>
       </main>
 
