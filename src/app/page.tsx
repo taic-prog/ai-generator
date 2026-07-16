@@ -34,6 +34,7 @@ export default function Home() {
   const tasteId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevIsGenerating = useRef(false);
+  const [previewKey, setPreviewKey] = useState(0);
   const { state, history, generate, abort, reset } = useGenerate();
   const isGenerating = state.status === "generating";
   const isFollowUp = history.length > 0;
@@ -54,6 +55,7 @@ export default function Home() {
 
   const handleCancel = useCallback(() => {
     abort();
+    setPreviewKey((k) => k + 1);
   }, [abort]);
 
   const handleReset = useCallback(() => {
@@ -61,6 +63,7 @@ export default function Home() {
     setPrompt("");
     setStyle("dark");
     setTaste("cool");
+    setPreviewKey((k) => k + 1);
   }, [reset]);
 
   return (
@@ -207,6 +210,7 @@ export default function Home() {
         {/* 右ペイン */}
         <div className="w-full sm:w-1/2 flex flex-col" style={{ minHeight: "400px" }}>
           <PreviewPane
+            key={previewKey}
             html={state.extractedHtml}
             rawStream={state.rawStream}
             status={state.status}

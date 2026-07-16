@@ -140,16 +140,19 @@ export function useGenerate() {
         if (postStreamHtml) {
           setState((prev) => {
             // mid-streamで既に抽出済みのHTMLを優先し、post-streamの貪欲マッチによる上書きを防ぐ
+            // abort() がキュー後に呼ばれた場合（ストリーム完了と手動キャンセルの競合）はスキップ
+            if (!isCurrentRequest()) return prev;
             const extracted = prev.extractedHtml !== "" ? prev.extractedHtml : postStreamHtml;
             return { ...prev, status: "done", extractedHtml: extracted };
           });
           // historyにはmid-stream抽出結果を優先して保存する（貪欲マッチの汚染を避けるため）
           const historyHtml = localExtractedHtml || postStreamHtml;
           const keep = MAX_HISTORY_TURNS - 1;
-          setHistory((prev) => [
-            ...(keep > 0 ? prev.slice(-keep) : []),
-            { prompt, html: historyHtml },
-          ]);
+          setHistory((prev) => {
+            // abort() がキュー後に呼ばれた場合は履歴を更新しない
+            if (!isCurrentRequest()) return prev;
+            return [...(keep > 0 ? prev.slice(-keep) : []), { prompt, html: historyHtml }];
+          });
           success = true;
         } else {
           // HTMLが抽出できなかった場合はエラーとして扱う
@@ -164,13 +167,16 @@ export function useGenerate() {
       // 後続リクエストがすでに開始している場合は状態を上書きしない
       if (!isCurrentRequest()) return false;
       if ((err as Error).name === "AbortError") {
-        setState((prev) => ({ ...prev, status: "error", error: "タイムアウトまたはキャンセルされました" }));
+        // タイムアウトと手動キャンセルが競合した場合、abort() 後の setState(ready) に任せる
+        setState((prev) => {
+          if (!isCurrentRequest()) return prev;
+          return { ...prev, status: "error", error: "タイムアウトまたはキャンセルされました" };
+        });
       } else {
-        setState((prev) => ({
-          ...prev,
-          status: "error",
-          error: err instanceof Error ? err.message : "不明なエラーが発生しました",
-        }));
+        setState((prev) => {
+          if (!isCurrentRequest()) return prev;
+          return { ...prev, status: "error", error: err instanceof Error ? err.message : "不明なエラーが発生しました" };
+        });
       }
     } finally {
       clearTimeout(timeoutId);
@@ -180,9 +186,10 @@ export function useGenerate() {
 
   const abort = useCallback(() => {
     abortControllerRef.current?.abort();
+    // null にしないと catch 内の isCurrentRequest() が true を返し setState を上書きする
     abortControllerRef.current = null;
-    // 生成中の状態を ready に戻すだけで履歴は保持する
-    setState((prev) => ({ ...prev, status: "ready", error: null }));
+    // generating 以外（done/error）で誤呼び出しされても表示内容を消さない
+    setState((prev) => (prev.status === "generating" ? initialState : prev));
   }, []);
 
   const reset = useCallback(() => {

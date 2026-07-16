@@ -50,7 +50,7 @@ export function PreviewPane({ html, rawStream, status }: PreviewPaneProps) {
         </span>
         <div className="flex items-center gap-2">
           <ToolbarButton onClick={() => setShowCode((v) => !v)} disabled={!hasContent && rawStream === ""}>
-            {effectiveShowCode ? "プレビュー" : "ソース表示"}
+            {showCode ? "プレビュー" : "ソース表示"}
           </ToolbarButton>
           <ToolbarButton onClick={handleReload} disabled={!hasContent}>
             リロード
